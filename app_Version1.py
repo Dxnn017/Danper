@@ -253,7 +253,7 @@ st.markdown("""
 <div class="main-header">
     <h1>🌱 SISTEMA TPS CALIDAD - DANPER</h1>
     <p>Sistema de Procesamiento de Transacciones para Control de Calidad Agroindustrial</p>
-    <p><strong>ISIA-103 - Sistemas Empresariales | Proyecto Semestral 2024</strong></p>
+    <p><strong>ISIA-103 - Sistemas Empresariales | Proyecto Semestral 2025</strong></p>
 </div>
 """, unsafe_allow_html=True)
 
