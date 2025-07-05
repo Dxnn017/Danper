@@ -931,151 +931,6 @@ elif modulo == "🧪 Pruebas Fisicoquímicas":
                             title='Grados Brix Promedio por Producto')
                 st.plotly_chart(fig2, use_container_width=True)
 
-# MÓDULO DE COMPATIBILIDAD DE ENVASES
-elif modulo == "📦 Compatibilidad Envases":
-    st.title("📦 Compatibilidad de Envases - TPS")
-    
-    tab1, tab2, tab3 = st.tabs(["🧪 Nueva Prueba", "📋 Historial", "📊 Análisis"])
-    
-    with tab1:
-        st.subheader("🧪 Evaluar Compatibilidad de Envases")
-        
-        with st.form("form_envase"):
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                conn = get_connection()
-                lotes = pd.read_sql_query("""
-                    SELECT lp.codigo_lote, pa.nombre_producto
-                    FROM lotes_produccion lp
-                    JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
-                    WHERE lp.estado_lote IN ('NUEVO', 'EN_PROCESO')
-                """, conn)
-                conn.close()
-                
-                if not lotes.empty:
-                    lote_seleccionado = st.selectbox("Lote para Evaluación", 
-                        options=lotes['codigo_lote'].tolist(),
-                        format_func=lambda x: f"{x} - {lotes[lotes['codigo_lote']==x]['nombre_producto'].iloc[0]}")
-                
-                tipo_envase = st.selectbox("Tipo de Envase", 
-                    ["Caja de cartón", "Bandeja PET", "Clamshell", "Bolsa plástica", "Caja de madera", "Envase al vacío"])
-                material_envase = st.selectbox("Material del Envase", 
-                    ["Cartón corrugado", "PET reciclado", "PET transparente", "Plástico PP", "Madera", "Vidrio"])
-                capacidad_envase = st.text_input("Capacidad del Envase", placeholder="Ej: 5 kg, 500 g")
-            
-            with col2:
-                prueba_hermeticidad = st.checkbox("Prueba de Hermeticidad Aprobada")
-                prueba_resistencia = st.checkbox("Prueba de Resistencia Aprobada")
-                compatibilidad_producto = st.checkbox("Compatibilidad con Producto Verificada")
-                observaciones = st.text_area("Observaciones", 
-                    placeholder="Detalles sobre la compatibilidad...")
-            
-            submitted = st.form_submit_button("📦 Registrar Evaluación", use_container_width=True)
-            
-            if submitted:
-                if lote_seleccionado and tipo_envase:
-                    codigo_compatibilidad = generar_codigo_envase()
-                    
-                    # Determinar resultado basado en pruebas
-                    resultado_envase = "APROBADO" if prueba_hermeticidad and prueba_resistencia and compatibilidad_producto else "RECHAZADO"
-                    
-                    conn = get_connection()
-                    cursor = conn.cursor()
-                    try:
-                        cursor.execute('''
-                            INSERT INTO compatibilidad_envases (codigo_compatibilidad, codigo_lote, tipo_envase, material_envase, capacidad_envase, prueba_hermeticidad, prueba_resistencia, compatibilidad_producto, resultado_envase, observaciones_envase)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (codigo_compatibilidad, lote_seleccionado, tipo_envase, material_envase, capacidad_envase, prueba_hermeticidad, prueba_resistencia, compatibilidad_producto, resultado_envase, observaciones))
-                        conn.commit()
-                        st.success(f"✅ Evaluación registrada: {codigo_compatibilidad}")
-                        
-                        # Mostrar resultado
-                        if resultado_envase == "APROBADO":
-                            st.markdown('<div class="status-aprobado">✅ ENVASE APROBADO</div>', unsafe_allow_html=True)
-                        else:
-                            st.markdown('<div class="status-rechazado">❌ ENVASE RECHAZADO</div>', unsafe_allow_html=True)
-                            
-                    except Exception as e:
-                        st.error(f"❌ Error: {e}")
-                    finally:
-                        conn.close()
-                else:
-                    st.error("❌ Complete los campos obligatorios")
-    
-    with tab2:
-        st.subheader("📋 Historial de Evaluaciones")
-        
-        conn = get_connection()
-        envases_df = pd.read_sql_query("""
-            SELECT ce.*, pa.nombre_producto, lp.cantidad_kg
-            FROM compatibilidad_envases ce
-            JOIN lotes_produccion lp ON ce.codigo_lote = lp.codigo_lote
-            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
-            ORDER BY ce.fecha_evaluacion DESC
-        """, conn)
-        conn.close()
-        
-        if not envases_df.empty:
-            st.dataframe(envases_df, use_container_width=True, height=400)
-            
-            # Métricas
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("📦 Total Evaluaciones", len(envases_df))
-            with col2:
-                aprobados = len(envases_df[envases_df['resultado_envase'] == 'APROBADO'])
-                st.metric("✅ Envases Aprobados", aprobados)
-            with col3:
-                materiales_unicos = envases_df['material_envase'].nunique()
-                st.metric("🔄 Materiales Diferentes", materiales_unicos)
-        else:
-            st.info("📦 No hay evaluaciones de envases registradas")
-    
-    with tab3:
-        st.subheader("📊 Análisis de Compatibilidad")
-        
-        conn = get_connection()
-        envases_df = pd.read_sql_query("""
-            SELECT ce.*, pa.nombre_producto, pa.categoria
-            FROM compatibilidad_envases ce
-            JOIN lotes_produccion lp ON ce.codigo_lote = lp.codigo_lote
-            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
-        """, conn)
-        conn.close()
-        
-        if not envases_df.empty:
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                # Distribución de resultados
-                resultado_dist = envases_df['resultado_envase'].value_counts().reset_index()
-                resultado_dist.columns = ['resultado', 'cantidad']
-                
-                fig = px.pie(resultado_dist, values='cantidad', names='resultado',
-                           title='Distribución de Resultados de Envases',
-                           color_discrete_map={'APROBADO': '#10b981', 'RECHAZADO': '#ef4444'})
-                st.plotly_chart(fig, use_container_width=True)
-            
-            with col2:
-                # Materiales más utilizados
-                material_dist = envases_df['material_envase'].value_counts().reset_index()
-                material_dist.columns = ['material', 'cantidad']
-                
-                fig2 = px.bar(material_dist, x='material', y='cantidad',
-                            title='Materiales de Envases más Utilizados',
-                            color='material')
-                st.plotly_chart(fig2, use_container_width=True)
-            
-            # Compatibilidad por producto
-            compatibilidad_producto = envases_df.groupby('nombre_producto')['resultado_envase'].apply(lambda x: (x == 'APROBADO').mean() * 100).reset_index()
-            compatibilidad_producto.columns = ['producto', 'porcentaje_aprobado']
-            
-            fig3 = px.bar(compatibilidad_producto, x='producto', y='porcentaje_aprobado',
-                        title='Porcentaje de Aprobación por Producto (%)',
-                        labels={'porcentaje_aprobado': '% Aprobación', 'producto': 'Producto'})
-            st.plotly_chart(fig3, use_container_width=True)
-            
 # MÓDULO DE ALERTAS AUTOMÁTICAS
 elif modulo == "🚨 Alertas Automáticas":
     st.title("🚨 Sistema de Alertas Automáticas TPS")
@@ -1432,29 +1287,14 @@ elif modulo == "📊 Informes Consolidados":
                 st.plotly_chart(fig2, use_container_width=True)
                 
                 # Tendencia de calidad
-                # Convertir 'fecha_informe' a datetime, con manejo de errores
-                informes_df['fecha_informe'] = pd.to_datetime(informes_df['fecha_informe'], errors='coerce')
-                
-                # Verifica si hay fechas no válidas (NaT) después de la conversión
-                invalid_dates = informes_df[informes_df['fecha_informe'].isna()]
-                if not invalid_dates.empty:
-                    st.write("Fechas inválidas encontradas en 'fecha_informe':", invalid_dates)
-                
-                # Asegurarse de que 'fecha_informe' no tenga valores nulos antes de extraer el mes
-                informes_df = informes_df.dropna(subset=['fecha_informe'])
-                
-                # Extraer el mes a partir de la fecha
+                informes_df['fecha_informe'] = pd.to_datetime(informes_df['fecha_informe'])
                 informes_df['mes'] = informes_df['fecha_informe'].dt.to_period('M')
-                
-                # Agrupar por mes y calcular el promedio del porcentaje de calidad
                 tendencia_calidad = informes_df.groupby('mes')['porcentaje_calidad_total'].mean().reset_index()
                 tendencia_calidad['mes'] = tendencia_calidad['mes'].astype(str)
                 
-                # Graficar la tendencia de calidad mensual
                 fig4 = px.line(tendencia_calidad, x='mes', y='porcentaje_calidad_total',
-                               title='Tendencia de Calidad Mensual', markers=True)
+                             title='Tendencia de Calidad Mensual', markers=True)
                 st.plotly_chart(fig4, use_container_width=True)
-
 
 # MÓDULO DE TRAZABILIDAD INTERNACIONAL
 elif modulo == "🌍 Trazabilidad Internacional":
