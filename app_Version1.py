@@ -1,3 +1,4 @@
+import streamlit as st
 import pandas as pd
 import sqlite3
 import datetime
@@ -6,6 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 
+# Configuración de la página
 st.set_page_config(
     page_title="TPS Calidad - DANPER",
     page_icon="🌱",
@@ -13,6 +15,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# CSS personalizado para el tema Danper
 st.markdown("""
 <style>
     .main-header {
@@ -54,11 +57,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Inicializar base de datos
 @st.cache_resource
 def init_database():
     conn = sqlite3.connect('danper_quality.db', check_same_thread=False)
     cursor = conn.cursor()
     
+    # Tabla de Control de Calidad de Productos
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS control_calidad (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,6 +82,7 @@ def init_database():
         )
     ''')
     
+    # Tabla de Trazabilidad y Certificaciones
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS trazabilidad (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -94,6 +100,7 @@ def init_database():
         )
     ''')
     
+    # Tabla de Auditorías e Inspecciones
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS auditorias (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -112,6 +119,7 @@ def init_database():
         )
     ''')
     
+    # Tabla de No Conformidades y Acciones Correctivas
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS no_conformidades (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -134,43 +142,48 @@ def init_database():
     conn.commit()
     return conn
 
+# Función para obtener conexión a la base de datos
 def get_connection():
     return sqlite3.connect('danper_quality.db', check_same_thread=False)
 
+# Función para insertar datos de ejemplo
 @st.cache_data
 def insert_sample_data():
     conn = get_connection()
     cursor = conn.cursor()
     
+    # Verificar si ya hay datos
     cursor.execute("SELECT COUNT(*) FROM control_calidad")
     if cursor.fetchone()[0] == 0:
+        # Datos de ejemplo para Control de Calidad
         sample_quality_data = [
-            (date.today() - timedelta(days=1), 'LT-ESP-001', 'Espárragos', 'UC-157',
+            (date.today() - timedelta(days=1), 'LT-ESP-001', 'Espárragos', 'UC-157', 
              'Longitud: 18cm, Diámetro: 12mm', 'Brix: 6.2, pH: 6.8', 'Coliformes: <10 UFC/g',
              'APROBADO', 'Juan Pérez', 'Producto conforme', 'APROBADO', date.today() + timedelta(days=30)),
-            (date.today(), 'LT-PAL-002', 'Paltas', 'Hass',
+            (date.today(), 'LT-PAL-002', 'Paltas', 'Hass', 
              'Peso: 180g, Firmeza: 8kg', 'Materia seca: 23%', 'Salmonella: Ausente',
              'APROBADO', 'María García', 'Calidad exportación', 'APROBADO', date.today() + timedelta(days=45)),
-            (date.today() - timedelta(days=2), 'LT-ARA-003', 'Arándanos', 'Biloxi',
+            (date.today() - timedelta(days=2), 'LT-ARA-003', 'Arándanos', 'Biloxi', 
              'Calibre: 16-18mm, Firmeza: 180g/mm', 'Brix: 12.5, Acidez: 0.8%', 'Mohos: <100 UFC/g',
              'APROBADO', 'Carlos López', 'Excelente calidad', 'APROBADO', date.today() + timedelta(days=21)),
-            (date.today() - timedelta(days=3), 'LT-UVA-004', 'Uvas', 'Red Globe',
+            (date.today() - timedelta(days=3), 'LT-UVA-004', 'Uvas', 'Red Globe', 
              'Peso racimo: 450g, Bayas: 18mm', 'Brix: 16.8, pH: 3.9', 'Levaduras: <1000 UFC/g',
              'OBSERVADO', 'Ana Martín', 'Revisar calibre', 'PENDIENTE', date.today() + timedelta(days=14))
         ]
         
         cursor.executemany('''
             INSERT INTO control_calidad 
-            (fecha_control, lote_producto, tipo_producto, variedad, parametros_fisicos,
-             parametros_quimicos, parametros_microbiologicos, resultado_general, inspector,
+            (fecha_control, lote_producto, tipo_producto, variedad, parametros_fisicos, 
+             parametros_quimicos, parametros_microbiologicos, resultado_general, inspector, 
              observaciones, estado_aprobacion, fecha_vencimiento)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', sample_quality_data)
         
+        # Datos de ejemplo para Trazabilidad
         sample_trace_data = [
-            ('TRZ-ESP-001', 'LT-ESP-001', 'Campo Norte - Sector A',
+            ('TRZ-ESP-001', 'LT-ESP-001', 'Campo Norte - Sector A', 
              date.today() - timedelta(days=120), date.today() - timedelta(days=30),
-             'Fertilización orgánica, Control biológico', 'Global GAP, HACCP',
+             'Fertilización orgánica, Control biológico', 'Global GAP, HACCP', 
              'Estados Unidos', 'Walmart USA', 'ENTREGADO', 'Certificado_GlobalGAP.pdf'),
             ('TRZ-PAL-002', 'LT-PAL-002', 'Campo Sur - Sector B',
              date.today() - timedelta(days=365), date.today() - timedelta(days=15),
@@ -190,6 +203,7 @@ def insert_sample_data():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', sample_trace_data)
         
+        # Datos de ejemplo para Auditorías
         sample_audit_data = [
             (date.today() - timedelta(days=30), 'Externa', 'Producción', 'SGS Perú', 'Global GAP',
              0, 2, 5, 92.5, 'COMPLETADA', date.today() + timedelta(days=30), 'Mejorar documentación de registros'),
@@ -207,8 +221,9 @@ def insert_sample_data():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', sample_audit_data)
         
+        # Datos de ejemplo para No Conformidades
         sample_nc_data = [
-            (date.today() - timedelta(days=10), 'NC-001', 'Producto', 'Laboratorio',
+            (date.today() - timedelta(days=10), 'NC-001', 'Producto', 'Laboratorio', 
              'Resultado microbiológico fuera de especificación', 'Contaminación cruzada en muestreo',
              'Repetir análisis con nueva muestra', 'Implementar protocolo de muestreo aséptico',
              'Jefe de Laboratorio', date.today() + timedelta(days=5), None, 'CERRADA', 'SI'),
@@ -225,11 +240,11 @@ def insert_sample_data():
              fecha_cierre_real, estado_nc, eficacia_verificada)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', sample_nc_data)
-        
-        conn.commit()
+    
+    conn.commit()
     conn.close()
 
-# Inicializar base de datos
+# Inicializar la base de datos y datos de ejemplo
 conn = init_database()
 insert_sample_data()
 
@@ -242,7 +257,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Sidebar
+# Sidebar para navegación
 st.sidebar.markdown("""
 <div style='background: linear-gradient(90deg, #e53e3e 0%, #c53030 100%); padding: 1rem; border-radius: 10px; text-align: center; margin-bottom: 1rem;'>
     <h2 style='color: white; margin: 0;'>🌱 DANPER</h2>
@@ -256,28 +271,34 @@ modulo = st.sidebar.selectbox(
      "🔍 Auditorías", "⚠️ No Conformidades"]
 )
 
-# DASHBOARD DE CALIDAD
+# Dashboard Principal de Calidad
 if modulo == "🏠 Dashboard de Calidad":
     st.title("🏠 Dashboard de Calidad - DANPER")
     
+    # Métricas principales de calidad
     col1, col2, col3, col4 = st.columns(4)
     
     conn = get_connection()
     
+    # Productos aprobados hoy
     productos_aprobados = pd.read_sql_query(
         "SELECT COUNT(*) as total FROM control_calidad WHERE fecha_control = ? AND estado_aprobacion = 'APROBADO'", 
         conn, params=[date.today()]
     )
+    
+    # Auditorías pendientes
     auditorias_pendientes = pd.read_sql_query(
         "SELECT COUNT(*) as total FROM auditorias WHERE estado_auditoria = 'PENDIENTE'", 
         conn
     )
     
+    # No conformidades abiertas
     nc_abiertas = pd.read_sql_query(
         "SELECT COUNT(*) as total FROM no_conformidades WHERE estado_nc IN ('ABIERTA', 'EN_PROCESO')", 
         conn
     )
     
+    # Lotes en seguimiento
     lotes_seguimiento = pd.read_sql_query(
         "SELECT COUNT(*) as total FROM trazabilidad WHERE estado_seguimiento = 'EN_TRANSITO'", 
         conn
@@ -295,6 +316,7 @@ if modulo == "🏠 Dashboard de Calidad":
     with col4:
         st.metric("📦 Lotes en Seguimiento", lotes_seguimiento['total'].iloc[0])
     
+    # Gráficos de calidad
     st.markdown("---")
     col1, col2 = st.columns(2)
     
@@ -302,7 +324,7 @@ if modulo == "🏠 Dashboard de Calidad":
         st.subheader("📊 Resultados de Control de Calidad")
         calidad_df = pd.read_sql_query("SELECT resultado_general, COUNT(*) as cantidad FROM control_calidad GROUP BY resultado_general", conn)
         if not calidad_df.empty:
-            fig = px.pie(calidad_df, values='cantidad', names='resultado_general',
+            fig = px.pie(calidad_df, values='cantidad', names='resultado_general', 
                         title='Distribución de Resultados de Calidad',
                         color_discrete_map={'APROBADO': '#48bb78', 'RECHAZADO': '#e53e3e', 'OBSERVADO': '#ed8936'})
             st.plotly_chart(fig, use_container_width=True)
@@ -311,18 +333,51 @@ if modulo == "🏠 Dashboard de Calidad":
         st.subheader("🎯 Puntuaciones de Auditorías")
         audit_df = pd.read_sql_query("SELECT area_auditada, AVG(puntuacion_total) as promedio FROM auditorias GROUP BY area_auditada", conn)
         if not audit_df.empty:
-            fig2 = px.bar(audit_df, x='area_auditada', y='promedio',
+            fig2 = px.bar(audit_df, x='area_auditada', y='promedio', 
                          title='Puntuación Promedio por Área',
                          color='promedio', color_continuous_scale='RdYlGn')
             st.plotly_chart(fig2, use_container_width=True)
     
     conn.close()
+    
+    # Información del TPS
+    st.markdown("---")
+    st.markdown("### 📋 Información del Sistema TPS de Calidad")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        **🎯 Tipo de TPS:** Sistema de Procesamiento de Transacciones para Control de Calidad Agroindustrial
+        
+        **📈 Importancia:**
+        - ✅ Garantizar la calidad de productos agrícolas de exportación
+        - ✅ Cumplimiento de normativas internacionales (Global GAP, HACCP, Organic)
+        - ✅ Trazabilidad completa desde campo hasta cliente final
+        - ✅ Gestión proactiva de riesgos de calidad
+        - ✅ Optimización de procesos de certificación
+        """)
+    
+    with col2:
+        st.markdown("""
+        **🔧 Tecnologías Utilizadas:**
+        - 🐍 Python + Streamlit (Interfaz de usuario)
+        - 🗄️ SQLite (Base de datos transaccional)
+        - 📊 Pandas (Análisis de datos de calidad)
+        - 📈 Plotly (Visualización de métricas)
+        
+        **🏢 Áreas Impactadas:**
+        - 🔬 Control de Calidad
+        - 🌱 Producción Agrícola
+        - 📦 Exportaciones
+        - 📜 Certificaciones
+        """)
 
-# CONTROL DE CALIDAD
+# Módulo de Control de Calidad
 elif modulo == "🔬 Control de Calidad":
     st.title("🔬 Módulo de Control de Calidad")
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📝 Registrar Control", "🔍 Consultar Controles", "✏️ Editar/Eliminar", "📊 Reportes"])
+    tab1, tab2, tab3 = st.tabs(["📝 Registrar Control", "🔍 Consultar Controles", "📊 Reportes de Calidad"])
     
     with tab1:
         st.subheader("📝 Registrar Nuevo Control de Calidad")
@@ -332,10 +387,10 @@ elif modulo == "🔬 Control de Calidad":
             
             with col1:
                 lote_producto = st.text_input("Código de Lote *", placeholder="LT-ESP-001")
-                tipo_producto = st.selectbox("Tipo de Producto *",
+                tipo_producto = st.selectbox("Tipo de Producto *", 
                     ["Espárragos", "Paltas", "Arándanos", "Uvas", "Mangos", "Alcachofas"])
                 variedad = st.text_input("Variedad", placeholder="UC-157, Hass, Biloxi...")
-                parametros_fisicos = st.text_area("Parámetros Físicos",
+                parametros_fisicos = st.text_area("Parámetros Físicos", 
                     placeholder="Ej: Longitud: 18cm, Peso: 180g, Firmeza: 8kg")
             
             with col2:
@@ -343,14 +398,14 @@ elif modulo == "🔬 Control de Calidad":
                     placeholder="Ej: Brix: 6.2, pH: 6.8, Materia seca: 23%")
                 parametros_microbiologicos = st.text_area("Parámetros Microbiológicos",
                     placeholder="Ej: Coliformes: <10 UFC/g, Salmonella: Ausente")
-                resultado_general = st.selectbox("Resultado General *",
+                resultado_general = st.selectbox("Resultado General *", 
                     ["APROBADO", "RECHAZADO", "OBSERVADO"])
                 inspector = st.text_input("Inspector Responsable *", placeholder="Nombre del inspector")
             
             observaciones = st.text_area("Observaciones", placeholder="Comentarios adicionales...")
-            estado_aprobacion = st.selectbox("Estado de Aprobación",
+            estado_aprobacion = st.selectbox("Estado de Aprobación", 
                 ["APROBADO", "PENDIENTE", "RECHAZADO"])
-            fecha_vencimiento = st.date_input("Fecha de Vencimiento",
+            fecha_vencimiento = st.date_input("Fecha de Vencimiento", 
                 value=date.today() + timedelta(days=30))
             
             submitted = st.form_submit_button("🔬 Registrar Control de Calidad", use_container_width=True)
@@ -382,12 +437,13 @@ elif modulo == "🔬 Control de Calidad":
     with tab2:
         st.subheader("🔍 Consultar Controles de Calidad")
         
+        # Filtros
         col1, col2, col3 = st.columns(3)
         with col1:
-            filtro_producto = st.selectbox("Filtrar por Producto",
+            filtro_producto = st.selectbox("Filtrar por Producto", 
                 ["Todos", "Espárragos", "Paltas", "Arándanos", "Uvas", "Mangos", "Alcachofas"])
         with col2:
-            filtro_resultado = st.selectbox("Filtrar por Resultado",
+            filtro_resultado = st.selectbox("Filtrar por Resultado", 
                 ["Todos", "APROBADO", "RECHAZADO", "OBSERVADO"])
         with col3:
             filtro_fecha = st.date_input("Desde fecha", value=date.today() - timedelta(days=30))
@@ -412,6 +468,7 @@ elif modulo == "🔬 Control de Calidad":
         if not controles_df.empty:
             st.dataframe(controles_df, use_container_width=True, height=400)
             
+            # Métricas de los controles
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("📋 Total Controles", len(controles_df))
@@ -428,83 +485,6 @@ elif modulo == "🔬 Control de Calidad":
             st.info("📋 No se encontraron controles con los filtros aplicados")
     
     with tab3:
-        st.subheader("✏️ Editar o Eliminar Control de Calidad")
-        
-        conn = get_connection()
-        controles_df = pd.read_sql_query("SELECT * FROM control_calidad ORDER BY fecha_control DESC", conn)
-        conn.close()
-        
-        if not controles_df.empty:
-            selected_id = st.selectbox("Seleccionar Control por ID", controles_df['id'].unique())
-            registro = controles_df[controles_df['id'] == selected_id].iloc[0]
-            
-            with st.form("form_editar_control"):
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    lote_producto = st.text_input("Código de Lote", value=registro['lote_producto'])
-                    tipo_producto = st.selectbox("Tipo de Producto",
-                        ["Espárragos", "Paltas", "Arándanos", "Uvas", "Mangos", "Alcachofas"],
-                        index=["Espárragos", "Paltas", "Arándanos", "Uvas", "Mangos", "Alcachofas"].index(registro['tipo_producto']) if registro['tipo_producto'] in ["Espárragos", "Paltas", "Arándanos", "Uvas", "Mangos", "Alcachofas"] else 0)
-                    variedad = st.text_input("Variedad", value=registro['variedad'] or "")
-                    parametros_fisicos = st.text_area("Parámetros Físicos", value=registro['parametros_fisicos'] or "")
-                
-                with col2:
-                    parametros_quimicos = st.text_area("Parámetros Químicos", value=registro['parametros_quimicos'] or "")
-                    parametros_microbiologicos = st.text_area("Parámetros Microbiológicos", value=registro['parametros_microbiologicos'] or "")
-                    resultado_general = st.selectbox("Resultado General",
-                        ["APROBADO", "RECHAZADO", "OBSERVADO"],
-                        index=["APROBADO", "RECHAZADO", "OBSERVADO"].index(registro['resultado_general']))
-                    inspector = st.text_input("Inspector", value=registro['inspector'])
-                
-                observaciones = st.text_area("Observaciones", value=registro['observaciones'] or "")
-                estado_aprobacion = st.selectbox("Estado de Aprobación",
-                    ["APROBADO", "PENDIENTE", "RECHAZADO"],
-                    index=["APROBADO", "PENDIENTE", "RECHAZADO"].index(registro['estado_aprobacion']))
-                
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    actualizar = st.form_submit_button("💾 Actualizar")
-                with col_btn2:
-                    eliminar = st.form_submit_button("🗑️ Eliminar")
-                
-                if actualizar:
-                    try:
-                        conn = get_connection()
-                        cursor = conn.cursor()
-                        cursor.execute('''
-                            UPDATE control_calidad SET
-                                lote_producto=?, tipo_producto=?, variedad=?, parametros_fisicos=?,
-                                parametros_quimicos=?, parametros_microbiologicos=?, resultado_general=?,
-                                inspector=?, observaciones=?, estado_aprobacion=?
-                            WHERE id=?
-                        ''', (lote_producto, tipo_producto, variedad, parametros_fisicos,
-                              parametros_quimicos, parametros_microbiologicos, resultado_general,
-                              inspector, observaciones, estado_aprobacion, selected_id))
-                        conn.commit()
-                        st.success("✅ Control actualizado correctamente.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error al actualizar: {e}")
-                    finally:
-                        conn.close()
-                
-                if eliminar:
-                    try:
-                        conn = get_connection()
-                        cursor = conn.cursor()
-                        cursor.execute("DELETE FROM control_calidad WHERE id = ?", (selected_id,))
-                        conn.commit()
-                        st.success("🗑️ Control eliminado correctamente.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error al eliminar: {e}")
-                    finally:
-                        conn.close()
-        else:
-            st.info("📋 No hay controles registrados para editar.")
-    
-    with tab4:
         st.subheader("📊 Reportes de Calidad")
         
         conn = get_connection()
@@ -515,11 +495,13 @@ elif modulo == "🔬 Control de Calidad":
             col1, col2 = st.columns(2)
             
             with col1:
+                # Calidad por tipo de producto
                 calidad_producto = controles_df.groupby(['tipo_producto', 'resultado_general']).size().unstack(fill_value=0)
                 fig = px.bar(calidad_producto, title='📊 Resultados de Calidad por Producto',
                            color_discrete_map={'APROBADO': '#48bb78', 'RECHAZADO': '#e53e3e', 'OBSERVADO': '#ed8936'})
                 st.plotly_chart(fig, use_container_width=True)
                 
+                # Performance por inspector
                 inspector_stats = controles_df.groupby('inspector').agg({
                     'resultado_general': lambda x: (x == 'APROBADO').mean() * 100
                 }).round(1).reset_index()
@@ -531,6 +513,7 @@ elif modulo == "🔬 Control de Calidad":
                 st.plotly_chart(fig3, use_container_width=True)
             
             with col2:
+                # Tendencia de calidad en el tiempo
                 controles_df['fecha_control'] = pd.to_datetime(controles_df['fecha_control'])
                 controles_df['mes'] = controles_df['fecha_control'].dt.to_period('M')
                 tendencia = controles_df.groupby(['mes', 'resultado_general']).size().unstack(fill_value=0)
@@ -539,12 +522,13 @@ elif modulo == "🔬 Control de Calidad":
                 fig2 = px.line(tendencia, title='📈 Tendencia de Calidad en el Tiempo')
                 st.plotly_chart(fig2, use_container_width=True)
                 
+                # Distribución por estado de aprobación
                 estado_dist = controles_df['estado_aprobacion'].value_counts()
                 fig4 = px.pie(values=estado_dist.values, names=estado_dist.index,
                             title='🔄 Estados de Aprobación')
                 st.plotly_chart(fig4, use_container_width=True)
 
-# TRAZABILIDAD
+# Módulo de Trazabilidad
 elif modulo == "📋 Trazabilidad":
     st.title("📋 Módulo de Trazabilidad y Certificaciones")
     
@@ -564,16 +548,16 @@ elif modulo == "📋 Trazabilidad":
                 fecha_cosecha = st.date_input("Fecha de Cosecha")
             
             with col2:
-                tratamientos_aplicados = st.text_area("Tratamientos Aplicados",
+                tratamientos_aplicados = st.text_area("Tratamientos Aplicados", 
                     placeholder="Fertilización orgánica, Control biológico...")
-                certificaciones = st.multiselect("Certificaciones",
+                certificaciones = st.multiselect("Certificaciones", 
                     ["Global GAP", "HACCP", "Organic", "Fair Trade", "BRC", "SQF"])
                 destino_exportacion = st.text_input("Destino de Exportación", placeholder="Estados Unidos")
                 cliente_final = st.text_input("Cliente Final", placeholder="Walmart USA")
-                estado_seguimiento = st.selectbox("Estado de Seguimiento",
+                estado_seguimiento = st.selectbox("Estado de Seguimiento", 
                     ["PREPARACION", "EN_TRANSITO", "ENTREGADO", "DEVUELTO"])
             
-            documentos_adjuntos = st.text_input("Documentos Adjuntos",
+            documentos_adjuntos = st.text_input("Documentos Adjuntos", 
                 placeholder="Certificado_GlobalGAP.pdf")
             
             submitted = st.form_submit_button("📋 Registrar Trazabilidad", use_container_width=True)
@@ -590,7 +574,7 @@ elif modulo == "📋 Trazabilidad":
                              estado_seguimiento, documentos_adjuntos)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ''', (codigo_trazabilidad, lote_producto, origen_campo, fecha_siembra, fecha_cosecha,
-                              tratamientos_aplicados, ', '.join(certificaciones), destino_exportacion,
+                              tratamientos_aplicados, ', '.join(certificaciones), destino_exportacion, 
                               cliente_final, estado_seguimiento, documentos_adjuntos))
                         conn.commit()
                         st.success("✅ Trazabilidad registrada exitosamente!")
@@ -604,15 +588,18 @@ elif modulo == "📋 Trazabilidad":
                 else:
                     st.error("❌ Por favor complete todos los campos obligatorios (*)")
     
-    
     with tab2:
         st.subheader("🗺️ Seguimiento de Lotes")
+        
         conn = get_connection()
         trazabilidad_df = pd.read_sql_query("SELECT * FROM trazabilidad ORDER BY fecha_cosecha DESC", conn)
         conn.close()
         
         if not trazabilidad_df.empty:
-            estado_filtro = st.selectbox("🔍 Filtrar por Estado", ["Todos"] + list(trazabilidad_df['estado_seguimiento'].unique()))
+            # Filtro por estado
+            estado_filtro = st.selectbox("Filtrar por Estado", 
+                ["Todos"] + list(trazabilidad_df['estado_seguimiento'].unique()))
+            
             if estado_filtro != "Todos":
                 df_filtrado = trazabilidad_df[trazabilidad_df['estado_seguimiento'] == estado_filtro]
             else:
@@ -620,82 +607,22 @@ elif modulo == "📋 Trazabilidad":
             
             st.dataframe(df_filtrado, use_container_width=True, height=400)
             
-            st.subheader("✏️ Editar o Eliminar Registro")
-            selected_row = st.selectbox("Selecciona un Código de Trazabilidad", df_filtrado['codigo_trazabilidad'].unique())
-            registro = trazabilidad_df[trazabilidad_df['codigo_trazabilidad'] == selected_row].iloc[0]
-            
-            with st.form("form_editar_trazabilidad"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    lote_producto = st.text_input("Lote de Producto", value=registro['lote_producto'])
-                    origen_campo = st.text_input("Origen - Campo", value=registro['origen_campo'])
-                    fecha_siembra = st.date_input("Fecha de Siembra", value=pd.to_datetime(registro['fecha_siembra']))
-                    fecha_cosecha = st.date_input("Fecha de Cosecha", value=pd.to_datetime(registro['fecha_cosecha']))
-                with col2:
-                    tratamientos = st.text_area("Tratamientos Aplicados", value=registro['tratamientos_aplicados'])
-                    certificaciones = st.multiselect("Certificaciones",
-                        ["Global GAP", "HACCP", "Organic", "Fair Trade", "BRC", "SQF"],
-                        default=registro['certificaciones'].split(', ') if registro['certificaciones'] else [])
-                    destino = st.text_input("Destino Exportación", value=registro['destino_exportacion'])
-                    cliente = st.text_input("Cliente Final", value=registro['cliente_final'])
-                    estado = st.selectbox("Estado de Seguimiento",
-                        ["PREPARACION", "EN_TRANSITO", "ENTREGADO", "DEVUELTO"],
-                        index=["PREPARACION", "EN_TRANSITO", "ENTREGADO", "DEVUELTO"].index(registro['estado_seguimiento']))
-                
-                documentos = st.text_input("Documentos Adjuntos", value=registro['documentos_adjuntos'])
-                
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    actualizar = st.form_submit_button("💾 Actualizar")
-                with col_btn2:
-                    eliminar = st.form_submit_button("🗑️ Eliminar")
-                
-                if actualizar:
-                    try:
-                        conn = get_connection()
-                        cursor = conn.cursor()
-                        cursor.execute('''
-                            UPDATE trazabilidad SET
-                                lote_producto=?, origen_campo=?, fecha_siembra=?, fecha_cosecha=?,
-                                tratamientos_aplicados=?, certificaciones=?, destino_exportacion=?,
-                                cliente_final=?, estado_seguimiento=?, documentos_adjuntos=?
-                            WHERE codigo_trazabilidad=?
-                        ''', (lote_producto, origen_campo, fecha_siembra, fecha_cosecha,
-                              tratamientos, ', '.join(certificaciones), destino, cliente,
-                              estado, documentos, selected_row))
-                        conn.commit()
-                        st.success("✅ Registro actualizado correctamente.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error al actualizar: {e}")
-                    finally:
-                        conn.close()
-                
-                if eliminar:
-                    try:
-                        conn = get_connection()
-                        cursor = conn.cursor()
-                        cursor.execute("DELETE FROM trazabilidad WHERE codigo_trazabilidad = ?", (selected_row,))
-                        conn.commit()
-                        st.success("🗑️ Registro eliminado correctamente.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error al eliminar: {e}")
-                    finally:
-                        conn.close()
-            
-            st.subheader("📈 Resumen de Estados de Lotes")
+            # Métricas de seguimiento
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.metric("🔄 En Preparación", len(df_filtrado[df_filtrado['estado_seguimiento'] == 'PREPARACION']))
+                preparacion = len(df_filtrado[df_filtrado['estado_seguimiento'] == 'PREPARACION'])
+                st.metric("🔄 En Preparación", preparacion)
             with col2:
-                st.metric("🚛 En Tránsito", len(df_filtrado[df_filtrado['estado_seguimiento'] == 'EN_TRANSITO']))
+                transito = len(df_filtrado[df_filtrado['estado_seguimiento'] == 'EN_TRANSITO'])
+                st.metric("🚛 En Tránsito", transito)
             with col3:
-                st.metric("✅ Entregado", len(df_filtrado[df_filtrado['estado_seguimiento'] == 'ENTREGADO']))
+                entregado = len(df_filtrado[df_filtrado['estado_seguimiento'] == 'ENTREGADO'])
+                st.metric("✅ Entregado", entregado)
             with col4:
-                st.metric("↩️ Devuelto", len(df_filtrado[df_filtrado['estado_seguimiento'] == 'DEVUELTO']))
+                devuelto = len(df_filtrado[df_filtrado['estado_seguimiento'] == 'DEVUELTO'])
+                st.metric("↩️ Devuelto", devuelto)
         else:
-            st.info("📋 No hay registros de trazabilidad aún.")
+            st.info("📋 No hay registros de trazabilidad")
     
     with tab3:
         st.subheader("📜 Gestión de Certificaciones")
@@ -705,6 +632,7 @@ elif modulo == "📋 Trazabilidad":
         conn.close()
         
         if not trazabilidad_df.empty:
+            # Análisis de certificaciones
             cert_data = []
             for _, row in trazabilidad_df.iterrows():
                 if row['certificaciones']:
@@ -719,8 +647,8 @@ elif modulo == "📋 Trazabilidad":
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    fig = px.bar(cert_count, x='certificacion', y='cantidad',
-                                title='📊 Distribución de Certificaciones por Lote',
+                    fig = px.bar(cert_count, x='certificacion', y='cantidad', 
+                               title='📊 Distribución de Certificaciones por Lote',
                                color='cantidad', color_continuous_scale='Greens')
                     st.plotly_chart(fig, use_container_width=True)
                 
@@ -729,14 +657,15 @@ elif modulo == "📋 Trazabilidad":
                                 title='📜 Proporción de Certificaciones')
                     st.plotly_chart(fig2, use_container_width=True)
                 
+                # Tabla de certificaciones
                 st.subheader("📊 Resumen de Certificaciones")
                 st.dataframe(cert_count, use_container_width=True)
 
-# AUDITORÍAS
+# Módulo de Auditorías
 elif modulo == "🔍 Auditorías":
     st.title("🔍 Módulo de Auditorías e Inspecciones")
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📝 Registrar Auditoría", "🔍 Consultar Auditorías", "✏️ Editar/Eliminar", "📊 Análisis"])
+    tab1, tab2, tab3 = st.tabs(["📝 Registrar Auditoría", "🔍 Consultar Auditorías", "📊 Análisis de Hallazgos"])
     
     with tab1:
         st.subheader("📝 Registrar Nueva Auditoría")
@@ -745,12 +674,12 @@ elif modulo == "🔍 Auditorías":
             col1, col2 = st.columns(2)
             
             with col1:
-                tipo_auditoria = st.selectbox("Tipo de Auditoría *",
+                tipo_auditoria = st.selectbox("Tipo de Auditoría *", 
                     ["Interna", "Externa", "Certificación", "Cliente", "Regulatoria"])
-                area_auditada = st.selectbox("Área Auditada *",
+                area_auditada = st.selectbox("Área Auditada *", 
                     ["Producción", "Almacén", "Laboratorio", "Campo", "Empaque", "Administración"])
                 auditor_responsable = st.text_input("Auditor Responsable *", placeholder="Nombre del auditor")
-                norma_aplicada = st.selectbox("Norma Aplicada *",
+                norma_aplicada = st.selectbox("Norma Aplicada *", 
                     ["Global GAP", "HACCP", "BRC", "SQF", "Organic", "ISO 22000"])
             
             with col2:
@@ -759,7 +688,7 @@ elif modulo == "🔍 Auditorías":
                 hallazgos_menores = st.number_input("Hallazgos Menores", min_value=0, value=0)
                 puntuacion_total = st.number_input("Puntuación Total (%)", min_value=0.0, max_value=100.0, value=85.0)
             
-            estado_auditoria = st.selectbox("Estado de Auditoría",
+            estado_auditoria = st.selectbox("Estado de Auditoría", 
                 ["PROGRAMADA", "EN_PROCESO", "COMPLETADA", "PENDIENTE"])
             fecha_seguimiento = st.date_input("Fecha de Seguimiento")
             plan_accion = st.text_area("Plan de Acción", placeholder="Descripción del plan de acción...")
@@ -798,14 +727,16 @@ elif modulo == "🔍 Auditorías":
         conn.close()
         
         if not auditorias_df.empty:
+            # Filtros
             col1, col2 = st.columns(2)
             with col1:
-                filtro_tipo = st.selectbox("Filtrar por Tipo",
+                filtro_tipo = st.selectbox("Filtrar por Tipo", 
                     ["Todos"] + list(auditorias_df['tipo_auditoria'].unique()))
             with col2:
-                filtro_area = st.selectbox("Filtrar por Área",
+                filtro_area = st.selectbox("Filtrar por Área", 
                     ["Todas"] + list(auditorias_df['area_auditada'].unique()))
             
+            # Aplicar filtros
             df_filtrado = auditorias_df.copy()
             if filtro_tipo != "Todos":
                 df_filtrado = df_filtrado[df_filtrado['tipo_auditoria'] == filtro_tipo]
@@ -814,6 +745,7 @@ elif modulo == "🔍 Auditorías":
             
             st.dataframe(df_filtrado, use_container_width=True, height=400)
             
+            # Métricas de auditorías
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("📋 Total Auditorías", len(df_filtrado))
@@ -821,8 +753,8 @@ elif modulo == "🔍 Auditorías":
                 puntuacion_promedio = df_filtrado['puntuacion_total'].mean()
                 st.metric("📊 Puntuación Promedio", f"{puntuacion_promedio:.1f}%")
             with col3:
-                hallazgos_totales = (df_filtrado['hallazgos_criticos'] +
-                                   df_filtrado['hallazgos_mayores'] +
+                hallazgos_totales = (df_filtrado['hallazgos_criticos'] + 
+                                   df_filtrado['hallazgos_mayores'] + 
                                    df_filtrado['hallazgos_menores']).sum()
                 st.metric("⚠️ Total Hallazgos", hallazgos_totales)
             with col4:
@@ -832,85 +764,6 @@ elif modulo == "🔍 Auditorías":
             st.info("🔍 No hay auditorías registradas")
     
     with tab3:
-        st.subheader("✏️ Editar o Eliminar Auditoría")
-        
-        conn = get_connection()
-        auditorias_df = pd.read_sql_query("SELECT * FROM auditorias ORDER BY fecha_auditoria DESC", conn)
-        conn.close()
-        
-        if not auditorias_df.empty:
-            selected_id = st.selectbox("Seleccionar Auditoría por ID", auditorias_df['id'].unique())
-            registro = auditorias_df[auditorias_df['id'] == selected_id].iloc[0]
-            
-            with st.form("form_editar_auditoria"):
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    tipo_auditoria = st.selectbox("Tipo de Auditoría",
-                        ["Interna", "Externa", "Certificación", "Cliente", "Regulatoria"],
-                        index=["Interna", "Externa", "Certificación", "Cliente", "Regulatoria"].index(registro['tipo_auditoria']))
-                    area_auditada = st.selectbox("Área Auditada",
-                        ["Producción", "Almacén", "Laboratorio", "Campo", "Empaque", "Administración"],
-                        index=["Producción", "Almacén", "Laboratorio", "Campo", "Empaque", "Administración"].index(registro['area_auditada']))
-                    auditor_responsable = st.text_input("Auditor Responsable", value=registro['auditor_responsable'])
-                    norma_aplicada = st.selectbox("Norma Aplicada",
-                        ["Global GAP", "HACCP", "BRC", "SQF", "Organic", "ISO 22000"],
-                        index=["Global GAP", "HACCP", "BRC", "SQF", "Organic", "ISO 22000"].index(registro['norma_aplicada']))
-                
-                with col2:
-                    hallazgos_criticos = st.number_input("Hallazgos Críticos", min_value=0, value=int(registro['hallazgos_criticos']))
-                    hallazgos_mayores = st.number_input("Hallazgos Mayores", min_value=0, value=int(registro['hallazgos_mayores']))
-                    hallazgos_menores = st.number_input("Hallazgos Menores", min_value=0, value=int(registro['hallazgos_menores']))
-                    puntuacion_total = st.number_input("Puntuación Total (%)", min_value=0.0, max_value=100.0, value=float(registro['puntuacion_total']))
-                
-                estado_auditoria = st.selectbox("Estado de Auditoría",
-                    ["PROGRAMADA", "EN_PROCESO", "COMPLETADA", "PENDIENTE"],
-                    index=["PROGRAMADA", "EN_PROCESO", "COMPLETADA", "PENDIENTE"].index(registro['estado_auditoria']))
-                plan_accion = st.text_area("Plan de Acción", value=registro['plan_accion'] or "")
-                
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    actualizar = st.form_submit_button("💾 Actualizar")
-                with col_btn2:
-                    eliminar = st.form_submit_button("🗑️ Eliminar")
-                
-                if actualizar:
-                    try:
-                        conn = get_connection()
-                        cursor = conn.cursor()
-                        cursor.execute('''
-                            UPDATE auditorias SET
-                                tipo_auditoria=?, area_auditada=?, auditor_responsable=?, norma_aplicada=?,
-                                hallazgos_criticos=?, hallazgos_mayores=?, hallazgos_menores=?, puntuacion_total=?,
-                                estado_auditoria=?, plan_accion=?
-                            WHERE id=?
-                        ''', (tipo_auditoria, area_auditada, auditor_responsable, norma_aplicada,
-                              hallazgos_criticos, hallazgos_mayores, hallazgos_menores, puntuacion_total,
-                              estado_auditoria, plan_accion, selected_id))
-                        conn.commit()
-                        st.success("✅ Auditoría actualizada correctamente.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error al actualizar: {e}")
-                    finally:
-                        conn.close()
-                
-                if eliminar:
-                    try:
-                        conn = get_connection()
-                        cursor = conn.cursor()
-                        cursor.execute("DELETE FROM auditorias WHERE id = ?", (selected_id,))
-                        conn.commit()
-                        st.success("🗑️ Auditoría eliminada correctamente.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error al eliminar: {e}")
-                    finally:
-                        conn.close()
-        else:
-            st.info("🔍 No hay auditorías registradas para editar.")
-    
-    with tab4:
         st.subheader("📊 Análisis de Hallazgos")
         
         conn = get_connection()
@@ -921,6 +774,7 @@ elif modulo == "🔍 Auditorías":
             col1, col2 = st.columns(2)
             
             with col1:
+                # Distribución de hallazgos
                 hallazgos_data = {
                     'Tipo': ['Críticos', 'Mayores', 'Menores'],
                     'Cantidad': [
@@ -929,31 +783,34 @@ elif modulo == "🔍 Auditorías":
                         auditorias_df['hallazgos_menores'].sum()
                     ]
                 }
-                fig = px.bar(hallazgos_data, x='Tipo', y='Cantidad',
-                            title='⚠️ Distribución de Hallazgos',
+                fig = px.bar(hallazgos_data, x='Tipo', y='Cantidad', 
+                           title='⚠️ Distribución de Hallazgos',
                            color='Tipo', color_discrete_map={
                                'Críticos': '#e53e3e', 'Mayores': '#ed8936', 'Menores': '#48bb78'
                            })
                 st.plotly_chart(fig, use_container_width=True)
                 
+                # Hallazgos por norma
                 hallazgos_norma = auditorias_df.groupby('norma_aplicada').agg({
                     'hallazgos_criticos': 'sum',
                     'hallazgos_mayores': 'sum', 
                     'hallazgos_menores': 'sum'
                 }).reset_index()
                 
-                fig3 = px.bar(hallazgos_norma, x='norma_aplicada',
-                             y=['hallazgos_criticos', 'hallazgos_mayores', 'hallazgos_menores'],
+                fig3 = px.bar(hallazgos_norma, x='norma_aplicada', 
+                            y=['hallazgos_criticos', 'hallazgos_mayores', 'hallazgos_menores'],
                             title='📋 Hallazgos por Norma')
                 st.plotly_chart(fig3, use_container_width=True)
             
             with col2:
+                # Puntuaciones por área
                 puntuacion_area = auditorias_df.groupby('area_auditada')['puntuacion_total'].mean().reset_index()
                 fig2 = px.bar(puntuacion_area, x='area_auditada', y='puntuacion_total',
                             title='🎯 Puntuación Promedio por Área',
                             color='puntuacion_total', color_continuous_scale='RdYlGn')
                 st.plotly_chart(fig2, use_container_width=True)
                 
+                # Tendencia de puntuaciones
                 auditorias_df['fecha_auditoria'] = pd.to_datetime(auditorias_df['fecha_auditoria'])
                 auditorias_df['mes'] = auditorias_df['fecha_auditoria'].dt.to_period('M')
                 tendencia_punt = auditorias_df.groupby('mes')['puntuacion_total'].mean().reset_index()
@@ -963,11 +820,11 @@ elif modulo == "🔍 Auditorías":
                              title='📈 Tendencia de Puntuaciones', markers=True)
                 st.plotly_chart(fig4, use_container_width=True)
 
-# NO CONFORMIDADES
+# Módulo de No Conformidades
 elif modulo == "⚠️ No Conformidades":
     st.title("⚠️ Módulo de No Conformidades y Acciones Correctivas")
     
-    tab1, tab2, tab3, tab4 = st.tabs(["📝 Registrar NC", "🔧 Gestión de NC", "✏️ Editar/Eliminar", "📊 Análisis"])
+    tab1, tab2, tab3 = st.tabs(["📝 Registrar NC", "🔧 Gestión de NC", "📊 Análisis de Eficacia"])
     
     with tab1:
         st.subheader("📝 Registrar Nueva No Conformidad")
@@ -977,23 +834,23 @@ elif modulo == "⚠️ No Conformidades":
             
             with col1:
                 codigo_nc = st.text_input("Código de No Conformidad *", placeholder="NC-001")
-                tipo_nc = st.selectbox("Tipo de No Conformidad *",
+                tipo_nc = st.selectbox("Tipo de No Conformidad *", 
                     ["Producto", "Proceso", "Sistema", "Documentación", "Personal"])
-                area_afectada = st.selectbox("Área Afectada *",
+                area_afectada = st.selectbox("Área Afectada *", 
                     ["Producción", "Calidad", "Almacén", "Campo", "Laboratorio", "Administración"])
-                descripcion_nc = st.text_area("Descripción de la No Conformidad *",
+                descripcion_nc = st.text_area("Descripción de la No Conformidad *", 
                     placeholder="Descripción detallada del problema...")
             
             with col2:
-                causa_raiz = st.text_area("Análisis de Causa Raíz",
+                causa_raiz = st.text_area("Análisis de Causa Raíz", 
                     placeholder="Análisis de las causas que originaron la NC...")
-                accion_inmediata = st.text_area("Acción Inmediata",
+                accion_inmediata = st.text_area("Acción Inmediata", 
                     placeholder="Acciones tomadas de forma inmediata...")
-                accion_correctiva = st.text_area("Acción Correctiva",
+                accion_correctiva = st.text_area("Acción Correctiva", 
                     placeholder="Acciones para prevenir recurrencia...")
                 responsable = st.text_input("Responsable *", placeholder="Nombre del responsable")
             
-            fecha_cierre_programada = st.date_input("Fecha de Cierre Programada",
+            fecha_cierre_programada = st.date_input("Fecha de Cierre Programada", 
                 value=date.today() + timedelta(days=15))
             estado_nc = st.selectbox("Estado", ["ABIERTA", "EN_PROCESO", "CERRADA", "VERIFICADA"])
             
@@ -1033,6 +890,7 @@ elif modulo == "⚠️ No Conformidades":
         conn.close()
         
         if not nc_df.empty:
+            # Métricas de NC
             col1, col2, col3, col4 = st.columns(4)
             
             with col1:
@@ -1048,14 +906,16 @@ elif modulo == "⚠️ No Conformidades":
                 st.metric("🟢 NC Cerradas", nc_cerradas)
             
             with col4:
+                # Calcular NC vencidas
                 nc_df['fecha_cierre_programada'] = pd.to_datetime(nc_df['fecha_cierre_programada'])
-                nc_vencidas = len(nc_df[(nc_df['estado_nc'].isin(['ABIERTA', 'EN_PROCESO'])) &
+                nc_vencidas = len(nc_df[(nc_df['estado_nc'].isin(['ABIERTA', 'EN_PROCESO'])) & 
                                        (nc_df['fecha_cierre_programada'] < pd.Timestamp.now())])
                 st.metric("⏰ NC Vencidas", nc_vencidas)
             
+            # Tabla de NC con filtros
             st.subheader("📋 Lista de No Conformidades")
             
-            filtro_estado = st.selectbox("Filtrar por Estado",
+            filtro_estado = st.selectbox("Filtrar por Estado", 
                 ["Todos", "ABIERTA", "EN_PROCESO", "CERRADA", "VERIFICADA"])
             
             if filtro_estado != "Todos":
@@ -1068,82 +928,6 @@ elif modulo == "⚠️ No Conformidades":
             st.info("⚠️ No hay no conformidades registradas")
     
     with tab3:
-        st.subheader("✏️ Editar o Eliminar No Conformidad")
-        
-        conn = get_connection()
-        nc_df = pd.read_sql_query("SELECT * FROM no_conformidades ORDER BY fecha_deteccion DESC", conn)
-        conn.close()
-        
-        if not nc_df.empty:
-            selected_id = st.selectbox("Seleccionar NC por ID", nc_df['id'].unique())
-            registro = nc_df[nc_df['id'] == selected_id].iloc[0]
-            
-            with st.form("form_editar_nc"):
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    codigo_nc = st.text_input("Código de NC", value=registro['codigo_nc'])
-                    tipo_nc = st.selectbox("Tipo de NC",
-                        ["Producto", "Proceso", "Sistema", "Documentación", "Personal"],
-                        index=["Producto", "Proceso", "Sistema", "Documentación", "Personal"].index(registro['tipo_nc']))
-                    area_afectada = st.selectbox("Área Afectada",
-                        ["Producción", "Calidad", "Almacén", "Campo", "Laboratorio", "Administración"],
-                        index=["Producción", "Calidad", "Almacén", "Campo", "Laboratorio", "Administración"].index(registro['area_afectada']))
-                    descripcion_nc = st.text_area("Descripción", value=registro['descripcion_nc'])
-                
-                with col2:
-                    causa_raiz = st.text_area("Causa Raíz", value=registro['causa_raiz'] or "")
-                    accion_inmediata = st.text_area("Acción Inmediata", value=registro['accion_inmediata'] or "")
-                    accion_correctiva = st.text_area("Acción Correctiva", value=registro['accion_correctiva'] or "")
-                    responsable = st.text_input("Responsable", value=registro['responsable'])
-                
-                estado_nc = st.selectbox("Estado",
-                    ["ABIERTA", "EN_PROCESO", "CERRADA", "VERIFICADA"],
-                    index=["ABIERTA", "EN_PROCESO", "CERRADA", "VERIFICADA"].index(registro['estado_nc']))
-                
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    actualizar = st.form_submit_button("💾 Actualizar")
-                with col_btn2:
-                    eliminar = st.form_submit_button("🗑️ Eliminar")
-                
-                if actualizar:
-                    try:
-                        conn = get_connection()
-                        cursor = conn.cursor()
-                        cursor.execute('''
-                            UPDATE no_conformidades SET
-                                codigo_nc=?, tipo_nc=?, area_afectada=?, descripcion_nc=?,
-                                causa_raiz=?, accion_inmediata=?, accion_correctiva=?, responsable=?,
-                                estado_nc=?
-                            WHERE id=?
-                        ''', (codigo_nc, tipo_nc, area_afectada, descripcion_nc,
-                              causa_raiz, accion_inmediata, accion_correctiva, responsable,
-                              estado_nc, selected_id))
-                        conn.commit()
-                        st.success("✅ No Conformidad actualizada correctamente.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error al actualizar: {e}")
-                    finally:
-                        conn.close()
-                
-                if eliminar:
-                    try:
-                        conn = get_connection()
-                        cursor = conn.cursor()
-                        cursor.execute("DELETE FROM no_conformidades WHERE id = ?", (selected_id,))
-                        conn.commit()
-                        st.success("🗑️ No Conformidad eliminada correctamente.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error al eliminar: {e}")
-                    finally:
-                        conn.close()
-        else:
-            st.info("⚠️ No hay no conformidades registradas para editar.")
-    
-    with tab4:
         st.subheader("📊 Análisis de Eficacia")
         
         conn = get_connection()
@@ -1154,26 +938,30 @@ elif modulo == "⚠️ No Conformidades":
             col1, col2 = st.columns(2)
             
             with col1:
+                # NC por tipo
                 nc_tipo = nc_df.groupby('tipo_nc').size().reset_index(name='cantidad')
-                fig = px.pie(nc_tipo, values='cantidad', names='tipo_nc',
-                            title='📊 Distribución de NC por Tipo')
+                fig = px.pie(nc_tipo, values='cantidad', names='tipo_nc', 
+                           title='📊 Distribución de NC por Tipo')
                 st.plotly_chart(fig, use_container_width=True)
                 
+                # NC por estado
                 nc_estado = nc_df.groupby('estado_nc').size().reset_index(name='cantidad')
                 fig3 = px.bar(nc_estado, x='estado_nc', y='cantidad',
                             title='🔄 NC por Estado',
                             color='estado_nc', color_discrete_map={
-                                'ABIERTA': '#e53e3e', 'EN_PROCESO': '#ed8936',
+                                'ABIERTA': '#e53e3e', 'EN_PROCESO': '#ed8936', 
                                 'CERRADA': '#48bb78', 'VERIFICADA': '#3182ce'
                             })
                 st.plotly_chart(fig3, use_container_width=True)
             
             with col2:
+                # NC por área
                 nc_area = nc_df.groupby('area_afectada').size().reset_index(name='cantidad')
                 fig2 = px.bar(nc_area, x='area_afectada', y='cantidad',
                             title='🏢 NC por Área Afectada')
                 st.plotly_chart(fig2, use_container_width=True)
                 
+                # Tiempo promedio de cierre
                 nc_cerradas = nc_df[nc_df['estado_nc'] == 'CERRADA'].copy()
                 if not nc_cerradas.empty and 'fecha_cierre_real' in nc_cerradas.columns:
                     nc_cerradas['fecha_deteccion'] = pd.to_datetime(nc_cerradas['fecha_deteccion'])
@@ -1185,6 +973,7 @@ elif modulo == "⚠️ No Conformidades":
                                 title='⏱️ Tiempo Promedio de Cierre (días)')
                     st.plotly_chart(fig4, use_container_width=True)
             
+            # Tendencia de NC en el tiempo
             st.subheader("📈 Tendencia de No Conformidades")
             nc_df['fecha_deteccion'] = pd.to_datetime(nc_df['fecha_deteccion'])
             nc_df['mes'] = nc_df['fecha_deteccion'].dt.to_period('M')
@@ -1195,7 +984,7 @@ elif modulo == "⚠️ No Conformidades":
                           title='📈 Tendencia Mensual de No Conformidades', markers=True)
             st.plotly_chart(fig5, use_container_width=True)
 
-# SIDEBAR FOOTER
+# Footer
 st.sidebar.markdown("---")
 st.sidebar.markdown("""
 <div style='text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;'>
@@ -1206,13 +995,14 @@ st.sidebar.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Información adicional en sidebar
 with st.sidebar.expander("ℹ️ Información del Sistema"):
     st.markdown("""
     **Módulos Implementados:**
-    - 🔬 Control de Calidad ✅ CRUD Completo
-    - 📋 Trazabilidad ✅ CRUD Completo
-    - 🔍 Auditorías ✅ CRUD Completo
-    - ⚠️ No Conformidades ✅ CRUD Completo
+    - 🔬 Control de Calidad
+    - 📋 Trazabilidad
+    - 🔍 Auditorías
+    - ⚠️ No Conformidades
     
     **Certificaciones Soportadas:**
     - Global GAP
@@ -1223,7 +1013,6 @@ with st.sidebar.expander("ℹ️ Información del Sistema"):
     - SQF
     
     **Estado:** Operativo ✅
-    **Funciones TPS:** Añadir, Modificar, Eliminar ✅
     """)
 
 with st.sidebar.expander("📊 Estadísticas del Sistema"):
@@ -1240,4 +1029,3 @@ with st.sidebar.expander("📊 Estadísticas del Sistema"):
     st.metric("⚠️ No Conformidades", total_nc['total'].iloc[0])
     
     conn.close()
-
