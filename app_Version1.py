@@ -405,9 +405,9 @@ st.sidebar.markdown("""
 
 modulo = st.sidebar.selectbox(
     "🎯 Módulos TPS:",
-    ["🏠 Dashboard TPS", "👁️ Inspecciones Visuales", "📡 Lecturas de Sensores", 
-     "🧪 Pruebas Fisicoquímicas", "📦 Compatibilidad Envases", "🚨 Alertas Automáticas", 
-     "📊 Informes Consolidados", "🌍 Trazabilidad Internacional"]
+    ["🏠 Dashboard TPS", "📦 Gestión de Productos", "👁️ Inspecciones Visuales", 
+     "📡 Lecturas de Sensores", "🧪 Pruebas Fisicoquímicas", "📦 Compatibilidad Envases",
+     "🚨 Alertas Automáticas", "📊 Informes Consolidados", "🌍 Trazabilidad Internacional"]
 )
 
 # DASHBOARD TPS PRINCIPAL
@@ -516,7 +516,164 @@ if modulo == "🏠 Dashboard TPS":
             st.plotly_chart(fig2, use_container_width=True)
     
     conn.close()
-
+    
+# Módulo de Gestión de Productos
+elif modulo == "📦 Gestión de Productos":
+    st.title("📦 Gestión de Productos Agroindustriales")
+    
+    tab1, tab2, tab3 = st.tabs(["➕ Nuevo Producto", "📋 Lista de Productos", "📊 Análisis"])
+    
+    with tab1:
+        st.subheader("➕ Registrar Nuevo Producto")
+        
+        with st.form("form_producto"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                nombre_producto = st.text_input("Nombre del Producto", placeholder="Ej: Espárragos Verdes")
+                variedad = st.text_input("Variedad", placeholder="Ej: UC-157")
+                categoria = st.selectbox("Categoría", ["Hortalizas", "Frutas", "Berries", "Legumbres", "Granos"])
+            
+            with col2:
+                origen_campo = st.selectbox("Origen/Campo", ["Virú", "Chincha", "Trujillo", "Ica", "Piura", "Lambayeque"])
+                temporada = st.text_input("Temporada", placeholder="Ej: 2024-A")
+                estado = st.selectbox("Estado", ["Activo", "Inactivo", "En desarrollo"])
+            
+            submitted = st.form_submit_button("💾 Guardar Producto", use_container_width=True)
+            
+            if submitted:
+                if nombre_producto and variedad:
+                    codigo_producto = generar_codigo_producto()
+                    conn = get_connection()
+                    cursor = conn.cursor()
+                    try:
+                        cursor.execute('''
+                            INSERT INTO productos_agro (codigo_producto, nombre_producto, variedad, categoria, origen_campo, temporada, estado, fecha_registro)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (codigo_producto, nombre_producto, variedad, categoria, origen_campo, temporada, estado, date.today()))
+                        conn.commit()
+                        st.success(f"✅ Producto registrado: {codigo_producto}")
+                        st.balloons()
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
+                    finally:
+                        conn.close()
+                else:
+                    st.error("❌ Complete los campos obligatorios")
+    
+    with tab2:
+        st.subheader("📋 Lista de Productos Agroindustriales")
+        
+        conn = get_connection()
+        productos_df = pd.read_sql_query("SELECT * FROM productos_agro ORDER BY fecha_registro DESC", conn)
+        conn.close()
+        
+        if not productos_df.empty:
+            # Función para editar producto
+            def editar_producto(row):
+                with st.form(f"form_editar_{row['id']}"):
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        nuevo_nombre = st.text_input("Nombre", value=row['nombre_producto'])
+                        nueva_variedad = st.text_input("Variedad", value=row['variedad'])
+                        nueva_categoria = st.selectbox("Categoría", 
+                            ["Hortalizas", "Frutas", "Berries", "Legumbres", "Granos"],
+                            index=["Hortalizas", "Frutas", "Berries", "Legumbres", "Granos"].index(row['categoria']))
+                    
+                    with col2:
+                        nuevo_origen = st.selectbox("Origen", 
+                            ["Virú", "Chincha", "Trujillo", "Ica", "Piura", "Lambayeque"],
+                            index=["Virú", "Chincha", "Trujillo", "Ica", "Piura", "Lambayeque"].index(row['origen_campo']))
+                        nueva_temporada = st.text_input("Temporada", value=row['temporada'])
+                        nuevo_estado = st.selectbox("Estado", 
+                            ["Activo", "Inactivo", "En desarrollo"],
+                            index=["Activo", "Inactivo", "En desarrollo"].index(row['estado']))
+                    
+                    if st.form_submit_button("💾 Guardar Cambios"):
+                        conn = get_connection()
+                        cursor = conn.cursor()
+                        try:
+                            cursor.execute('''
+                                UPDATE productos_agro 
+                                SET nombre_producto=?, variedad=?, categoria=?, origen_campo=?, temporada=?, estado=?
+                                WHERE id=?
+                            ''', (nuevo_nombre, nueva_variedad, nueva_categoria, nuevo_origen, nueva_temporada, nuevo_estado, row['id']))
+                            conn.commit()
+                            st.success("✅ Producto actualizado")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"❌ Error: {e}")
+                        finally:
+                            conn.close()
+            
+            # Mostrar tabla con opciones de edición/eliminación
+            for _, row in productos_df.iterrows():
+                with st.expander(f"{row['nombre_producto']} ({row['codigo_producto']})"):
+                    editar_producto(row)
+                    
+                    if st.button(f"❌ Eliminar {row['codigo_producto']}", key=f"eliminar_{row['id']}"):
+                        conn = get_connection()
+                        cursor = conn.cursor()
+                        try:
+                            # Verificar si hay lotes asociados
+                            cursor.execute("SELECT COUNT(*) FROM lotes_produccion WHERE codigo_producto=?", (row['codigo_producto'],))
+                            if cursor.fetchone()[0] == 0:
+                                cursor.execute("DELETE FROM productos_agro WHERE id=?", (row['id'],))
+                                conn.commit()
+                                st.success("✅ Producto eliminado")
+                                st.rerun()
+                            else:
+                                st.error("❌ No se puede eliminar: Hay lotes asociados a este producto")
+                        except Exception as e:
+                            st.error(f"❌ Error: {e}")
+                        finally:
+                            conn.close()
+        else:
+            st.info("📦 No hay productos registrados")
+    
+    with tab3:
+        st.subheader("📊 Análisis de Productos")
+        
+        conn = get_connection()
+        productos_df = pd.read_sql_query("SELECT * FROM productos_agro", conn)
+        lotes_df = pd.read_sql_query("SELECT * FROM lotes_produccion", conn)
+        conn.close()
+        
+        if not productos_df.empty:
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Distribución por categoría
+                categoria_dist = productos_df['categoria'].value_counts().reset_index()
+                categoria_dist.columns = ['categoria', 'cantidad']
+                
+                fig = px.pie(categoria_dist, values='cantidad', names='categoria',
+                           title='Distribución de Productos por Categoría',
+                           color_discrete_sequence=px.colors.sequential.RdBu)
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                # Estado de productos
+                estado_dist = productos_df['estado'].value_counts().reset_index()
+                estado_dist.columns = ['estado', 'cantidad']
+                
+                fig2 = px.bar(estado_dist, x='estado', y='cantidad',
+                            title='Estado de los Productos',
+                            color='estado',
+                            color_discrete_map={'Activo': '#10b981', 'Inactivo': '#ef4444', 'En desarrollo': '#f59e0b'})
+                st.plotly_chart(fig2, use_container_width=True)
+            
+            # Relación productos-lotes (si hay datos)
+            if not lotes_df.empty:
+                productos_lotes = pd.merge(productos_df, lotes_df, left_on='codigo_producto', right_on='codigo_producto', how='left')
+                productos_lotes_count = productos_lotes.groupby('nombre_producto')['codigo_lote'].count().reset_index()
+                
+                fig3 = px.bar(productos_lotes_count, x='nombre_producto', y='codigo_lote',
+                            title='Número de Lotes por Producto',
+                            labels={'codigo_lote': 'N° de Lotes', 'nombre_producto': 'Producto'})
+                st.plotly_chart(fig3, use_container_width=True)
+                
 # MÓDULO DE INSPECCIONES VISUALES
 elif modulo == "👁️ Inspecciones Visuales":
     st.title("👁️ Inspecciones Visuales - TPS en Tiempo Real")
