@@ -577,19 +577,19 @@ elif modulo == "📋 Trazabilidad":
     conn.close()
 
     if not trazabilidad_df.empty:
-        # Filtro por estado
-        estado_filtro = st.selectbox("Filtrar por Estado", 
-            ["Todos"] + list(trazabilidad_df['estado_seguimiento'].unique()))
 
+        estado_filtro = st.selectbox("🔍 Filtrar por Estado", ["Todos"] + list(trazabilidad_df['estado_seguimiento'].unique()))
         if estado_filtro != "Todos":
             df_filtrado = trazabilidad_df[trazabilidad_df['estado_seguimiento'] == estado_filtro]
         else:
             df_filtrado = trazabilidad_df
 
+
         st.dataframe(df_filtrado, use_container_width=True, height=400)
 
-        st.subheader("✏️ Editar o Eliminar Registros")
-        selected_row = st.selectbox("Selecciona un registro por Código de Trazabilidad", df_filtrado['codigo_trazabilidad'].unique())
+
+        st.subheader("✏️ Editar o Eliminar Registro")
+        selected_row = st.selectbox("Selecciona un Código de Trazabilidad", df_filtrado['codigo_trazabilidad'].unique())
 
         registro = trazabilidad_df[trazabilidad_df['codigo_trazabilidad'] == selected_row].iloc[0]
 
@@ -597,79 +597,77 @@ elif modulo == "📋 Trazabilidad":
             col1, col2 = st.columns(2)
 
             with col1:
-                nuevo_lote = st.text_input("Lote de Producto", value=registro['lote_producto'])
-                nuevo_origen = st.text_input("Origen - Campo", value=registro['origen_campo'])
-                nueva_siembra = st.date_input("Fecha de Siembra", value=pd.to_datetime(registro['fecha_siembra']))
-                nueva_cosecha = st.date_input("Fecha de Cosecha", value=pd.to_datetime(registro['fecha_cosecha']))
+                lote_producto = st.text_input("Lote de Producto", value=registro['lote_producto'])
+                origen_campo = st.text_input("Origen - Campo", value=registro['origen_campo'])
+                fecha_siembra = st.date_input("Fecha de Siembra", value=pd.to_datetime(registro['fecha_siembra']))
+                fecha_cosecha = st.date_input("Fecha de Cosecha", value=pd.to_datetime(registro['fecha_cosecha']))
 
             with col2:
-                nuevos_tratamientos = st.text_area("Tratamientos Aplicados", value=registro['tratamientos_aplicados'])
-                nuevas_certificaciones = st.multiselect("Certificaciones", 
+                tratamientos = st.text_area("Tratamientos Aplicados", value=registro['tratamientos_aplicados'])
+                certificaciones = st.multiselect("Certificaciones", 
                     ["Global GAP", "HACCP", "Organic", "Fair Trade", "BRC", "SQF"],
                     default=registro['certificaciones'].split(', ') if registro['certificaciones'] else [])
-                nuevo_destino = st.text_input("Destino de Exportación", value=registro['destino_exportacion'])
-                nuevo_cliente = st.text_input("Cliente Final", value=registro['cliente_final'])
-                nuevo_estado = st.selectbox("Estado de Seguimiento", 
+                destino = st.text_input("Destino Exportación", value=registro['destino_exportacion'])
+                cliente = st.text_input("Cliente Final", value=registro['cliente_final'])
+                estado = st.selectbox("Estado de Seguimiento", 
                     ["PREPARACION", "EN_TRANSITO", "ENTREGADO", "DEVUELTO"],
                     index=["PREPARACION", "EN_TRANSITO", "ENTREGADO", "DEVUELTO"].index(registro['estado_seguimiento']))
 
-            nuevos_docs = st.text_input("Documentos Adjuntos", value=registro['documentos_adjuntos'])
+            documentos = st.text_input("Documentos Adjuntos", value=registro['documentos_adjuntos'])
 
-            col_boton1, col_boton2 = st.columns(2)
-
-            with col_boton1:
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
                 actualizar = st.form_submit_button("💾 Actualizar")
-            with col_boton2:
+            with col_btn2:
                 eliminar = st.form_submit_button("🗑️ Eliminar")
 
             if actualizar:
-                conn = get_connection()
-                cursor = conn.cursor()
                 try:
+                    conn = get_connection()
+                    cursor = conn.cursor()
                     cursor.execute('''
                         UPDATE trazabilidad SET
-                        lote_producto = ?, origen_campo = ?, fecha_siembra = ?, fecha_cosecha = ?,
-                        tratamientos_aplicados = ?, certificaciones = ?, destino_exportacion = ?,
-                        cliente_final = ?, estado_seguimiento = ?, documentos_adjuntos = ?
-                        WHERE codigo_trazabilidad = ?
-                    ''', (nuevo_lote, nuevo_origen, nueva_siembra, nueva_cosecha, nuevos_tratamientos,
-                          ', '.join(nuevas_certificaciones), nuevo_destino, nuevo_cliente,
-                          nuevo_estado, nuevos_docs, selected_row))
+                            lote_producto=?, origen_campo=?, fecha_siembra=?, fecha_cosecha=?,
+                            tratamientos_aplicados=?, certificaciones=?, destino_exportacion=?,
+                            cliente_final=?, estado_seguimiento=?, documentos_adjuntos=?
+                        WHERE codigo_trazabilidad=?
+                    ''', (lote_producto, origen_campo, fecha_siembra, fecha_cosecha,
+                          tratamientos, ', '.join(certificaciones), destino, cliente,
+                          estado, documentos, selected_row))
                     conn.commit()
-                    st.success("✅ Registro actualizado exitosamente")
+                    st.success("✅ Registro actualizado correctamente.")
                 except Exception as e:
                     st.error(f"❌ Error al actualizar: {e}")
                 finally:
                     conn.close()
 
             if eliminar:
-                conn = get_connection()
-                cursor = conn.cursor()
                 try:
+                    conn = get_connection()
+                    cursor = conn.cursor()
                     cursor.execute("DELETE FROM trazabilidad WHERE codigo_trazabilidad = ?", (selected_row,))
                     conn.commit()
-                    st.success("🗑️ Registro eliminado correctamente")
+                    st.success("🗑️ Registro eliminado correctamente.")
                 except Exception as e:
                     st.error(f"❌ Error al eliminar: {e}")
                 finally:
                     conn.close()
 
-        # Métricas de seguimiento
+
+        st.subheader("📈 Resumen de Estados de Lotes")
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            preparacion = len(df_filtrado[df_filtrado['estado_seguimiento'] == 'PREPARACION'])
-            st.metric("🔄 En Preparación", preparacion)
+            st.metric("🔄 En Preparación", len(df_filtrado[df_filtrado['estado_seguimiento'] == 'PREPARACION']))
         with col2:
-            transito = len(df_filtrado[df_filtrado['estado_seguimiento'] == 'EN_TRANSITO'])
-            st.metric("🚛 En Tránsito", transito)
+            st.metric("🚛 En Tránsito", len(df_filtrado[df_filtrado['estado_seguimiento'] == 'EN_TRANSITO']))
         with col3:
-            entregado = len(df_filtrado[df_filtrado['estado_seguimiento'] == 'ENTREGADO'])
-            st.metric("✅ Entregado", entregado)
+            st.metric("✅ Entregado", len(df_filtrado[df_filtrado['estado_seguimiento'] == 'ENTREGADO']))
         with col4:
-            devuelto = len(df_filtrado[df_filtrado['estado_seguimiento'] == 'DEVUELTO'])
-            st.metric("↩️ Devuelto", devuelto)
+            st.metric("↩️ Devuelto", len(df_filtrado[df_filtrado['estado_seguimiento'] == 'DEVUELTO']))
+
     else:
-        st.info("📋 No hay registros de trazabilidad")
+        st.info("📋 No hay registros de trazabilidad aún.")
+
 
     
     with tab3:
@@ -704,7 +702,7 @@ elif modulo == "📋 Trazabilidad":
                                 title='📜 Proporción de Certificaciones')
                     st.plotly_chart(fig2, use_container_width=True)
                 
-                # Tabla de certificaciones
+       
                 st.subheader("📊 Resumen de Certificaciones")
                 st.dataframe(cert_count, use_container_width=True)
 
