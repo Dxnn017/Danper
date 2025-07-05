@@ -297,9 +297,13 @@ def insertar_datos_danper():
             ('PROD-PAL-002', 'Paltas Hass', 'Hass Premium', 'Frutas', 'Campo Sur Chincha', '2024-A', 'Activo', date.today()),
             ('PROD-ARA-003', 'Arándanos Frescos', 'Biloxi', 'Berries', 'Campo Este Trujillo', '2024-A', 'Activo', date.today()),
             ('PROD-UVA-004', 'Uvas Red Globe', 'Red Globe Premium', 'Frutas', 'Campo Oeste Ica', '2024-A', 'Activo', date.today()),
-            ('PROD-MAN-005', 'Mangos Kent', 'Kent Export', 'Frutas', 'Campo Central Piura', '2024-A', 'Activo', date.today())
+            ('PROD-MAN-005', 'Mangos Kent', 'Kent Export', 'Frutas', 'Campo Central Piura', '2024-A', 'Activo', date.today()),
+            ('PROD-ALC-006', 'Alcachofas', 'Imperial Star', 'Hortalizas', 'Campo Sur Chincha', '2024-A', 'Activo', date.today()),
+            ('PROD-BRO-007', 'Brócoli', 'Marathon', 'Hortalizas', 'Campo Este Trujillo', '2024-A', 'Activo', date.today()),
+            ('PROD-QUI-008', 'Quinua', 'Blanca Real', 'Granos', 'Campo Andino', '2024-A', 'Activo', date.today()),
+            ('PROD-MAR-009', 'Maracuyá', 'Gigante Amarillo', 'Frutas', 'Campo Selva Central', '2024-A', 'Activo', date.today()),
+            ('PROD-GRA-010', 'Granada', 'Wonderful', 'Frutas', 'Campo Sur Ica', '2024-A', 'Activo', date.today())
         ]
-        
         cursor.executemany('''
             INSERT INTO productos_agro (codigo_producto, nombre_producto, variedad, categoria, origen_campo, temporada, estado, fecha_registro)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
