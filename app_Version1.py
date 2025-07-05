@@ -1,6 +1,4 @@
-He corregido los errores en el código y lo he mejorado para que funcione correctamente. Aquí está la versión corregida:
 
-```python
 import streamlit as st
 import pandas as pd
 import sqlite3
