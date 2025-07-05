@@ -123,19 +123,6 @@ Sistema de Procesamiento de Transacciones especializado en control de calidad pa
 - Renovaciones programadas
 - Auditorías facilitadas
 
-## 🚀 Instalación
-
-\`\`\`bash
-# Clonar repositorio
-git clone https://github.com/tu-usuario/tps-danper-calidad.git
-
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Ejecutar aplicación
-streamlit run app.py
-\`\`\`
-
 ## 📈 Beneficios Cuantificables
 
 - ✅ **95%** reducción de errores humanos
