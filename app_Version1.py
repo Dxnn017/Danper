@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import sqlite3
@@ -9,7 +8,6 @@ import plotly.graph_objects as go
 import numpy as np
 import uuid
 import random
-from io import BytesIO
 
 # Configuración de la página
 st.set_page_config(
@@ -273,17 +271,14 @@ def generar_codigo_sensor():
 def generar_codigo_prueba():
     return f"LAB-{datetime.datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:6].upper()}"
 
-def generar_codigo_envase():
-    return f"ENV-{datetime.datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:6].upper()}"
-
 # Función para simular lecturas de sensores en tiempo real
 def simular_lectura_sensores():
     return {
-        'temperatura': round(random.uniform(2.0, 8.0),  # Temperatura de refrigeración
-        'peso': round(random.uniform(15.0, 25.0),       # Peso en kg
-        'humedad': round(random.uniform(85.0, 95.0),    # Humedad relativa
-        'ph': round(random.uniform(6.0, 7.5),           # pH
-        'brix': round(random.uniform(8.0, 15.0)         # Grados Brix
+        'temperatura': round(random.uniform(2.0, 8.0), 1),  # Temperatura de refrigeración
+        'peso': round(random.uniform(15.0, 25.0), 2),       # Peso en kg
+        'humedad': round(random.uniform(85.0, 95.0), 1),    # Humedad relativa
+        'ph': round(random.uniform(6.0, 7.5), 2),           # pH
+        'brix': round(random.uniform(8.0, 15.0), 1)         # Grados Brix
     }
 
 # Función para insertar datos de ejemplo realistas
@@ -302,13 +297,9 @@ def insertar_datos_danper():
             ('PROD-PAL-002', 'Paltas Hass', 'Hass Premium', 'Frutas', 'Campo Sur Chincha', '2024-A', 'Activo', date.today()),
             ('PROD-ARA-003', 'Arándanos Frescos', 'Biloxi', 'Berries', 'Campo Este Trujillo', '2024-A', 'Activo', date.today()),
             ('PROD-UVA-004', 'Uvas Red Globe', 'Red Globe Premium', 'Frutas', 'Campo Oeste Ica', '2024-A', 'Activo', date.today()),
-            ('PROD-MAN-005', 'Mangos Kent', 'Kent Export', 'Frutas', 'Campo Central Piura', '2024-A', 'Activo', date.today()),
-            ('PROD-ALC-006', 'Alcachofas', 'Imperial Star', 'Hortalizas', 'Campo Sur Chincha', '2024-A', 'Activo', date.today()),
-            ('PROD-BRO-007', 'Brócoli', 'Marathon', 'Hortalizas', 'Campo Este Trujillo', '2024-A', 'Activo', date.today()),
-            ('PROD-QUI-008', 'Quinua', 'Blanca Real', 'Granos', 'Campo Andino', '2024-A', 'Activo', date.today()),
-            ('PROD-MAR-009', 'Maracuyá', 'Gigante Amarillo', 'Frutas', 'Campo Selva Central', '2024-A', 'Activo', date.today()),
-            ('PROD-GRA-010', 'Granada', 'Wonderful', 'Frutas', 'Campo Sur Ica', '2024-A', 'Activo', date.today())
+            ('PROD-MAN-005', 'Mangos Kent', 'Kent Export', 'Frutas', 'Campo Central Piura', '2024-A', 'Activo', date.today())
         ]
+        
         cursor.executemany('''
             INSERT INTO productos_agro (codigo_producto, nombre_producto, variedad, categoria, origen_campo, temporada, estado, fecha_registro)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -361,18 +352,6 @@ def insertar_datos_danper():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', pruebas_ejemplo)
         
-        # Compatibilidad de envases
-        envases_ejemplo = [
-            ('ENV-20241201-001', 'LT-ESP-20241201', datetime.datetime.now() - timedelta(hours=1), 'Caja de cartón', 'Cartón corrugado', '5 kg', 1, 1, 1, 'APROBADO', 'Envase adecuado para exportación'),
-            ('ENV-20241201-002', 'LT-PAL-20241201', datetime.datetime.now() - timedelta(minutes=45), 'Bandeja PET', 'PET reciclado', '4 unidades', 1, 1, 1, 'APROBADO', 'Envase premium para mercado europeo'),
-            ('ENV-20241201-003', 'LT-ARA-20241201', datetime.datetime.now() - timedelta(minutes=30), 'Clamshell', 'PET transparente', '125 g', 1, 1, 1, 'APROBADO', 'Envase estándar para berries')
-        ]
-        
-        cursor.executemany('''
-            INSERT INTO compatibilidad_envases (codigo_compatibilidad, codigo_lote, fecha_evaluacion, tipo_envase, material_envase, capacidad_envase, prueba_hermeticidad, prueba_resistencia, compatibilidad_producto, resultado_envase, observaciones_envase)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', envases_ejemplo)
-        
         # Alertas automáticas (algunas de ejemplo)
         alertas_ejemplo = [
             ('ALT-20241201-001', 'LT-UVA-20241201', 'TEMPERATURA', 'MEDIA', 'Temperatura ligeramente elevada detectada', 'Temperatura', 8.5, 8.0, 'ACTIVA', 'Ajuste de refrigeración'),
@@ -394,17 +373,6 @@ def insertar_datos_danper():
             INSERT INTO informes_calidad (codigo_informe, codigo_lote, fecha_informe, resultado_inspeccion_visual, resultado_sensores, resultado_fisicoquimico, resultado_envases, decision_final, porcentaje_calidad_total, certificaciones_obtenidas, destino_comercial, responsable_aprobacion, fecha_aprobacion)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', informes_ejemplo)
-        
-        # Trazabilidad internacional
-        trazabilidad_ejemplo = [
-            ('TRZ-20241201-001', 'LT-ESP-20241201', 'Estados Unidos', 'Fresh Foods Inc.', 'Global GAP, HACCP', 'ECMU1234567', date.today() + timedelta(days=7), 'Miami', 'Factura, BL, Certificado Fitosanitario', 'PREPARACION'),
-            ('TRZ-20241201-002', 'LT-PAL-20241201', 'Países Bajos', 'European Fruits BV', 'Organic, Fair Trade', 'CMAU7654321', date.today() + timedelta(days=10), 'Rotterdam', 'Factura, BL, Certificado Orgánico', 'PREPARACION')
-        ]
-        
-        cursor.executemany('''
-            INSERT INTO trazabilidad_internacional (codigo_trazabilidad, codigo_lote, pais_destino, cliente_internacional, certificacion_requerida, numero_contenedor, fecha_embarque, documentos_exportacion, estado_envio)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', trazabilidad_ejemplo)
     
     conn.commit()
     conn.close()
@@ -433,9 +401,9 @@ st.sidebar.markdown("""
 
 modulo = st.sidebar.selectbox(
     "🎯 Módulos TPS:",
-    ["🏠 Dashboard TPS", "📦 Gestión de Productos", "👁️ Inspecciones Visuales", 
-     "📡 Lecturas de Sensores", "🧪 Pruebas Fisicoquímicas", "📦 Compatibilidad Envases",
-     "🚨 Alertas Automáticas", "📊 Informes Consolidados", "🌍 Trazabilidad Internacional"]
+    ["🏠 Dashboard TPS", "👁️ Inspecciones Visuales", "📡 Lecturas de Sensores", 
+     "🧪 Pruebas Fisicoquímicas", "📦 Compatibilidad Envases", "🚨 Alertas Automáticas", 
+     "📊 Informes Consolidados", "🌍 Trazabilidad Internacional"]
 )
 
 # DASHBOARD TPS PRINCIPAL
@@ -544,43 +512,854 @@ if modulo == "🏠 Dashboard TPS":
             st.plotly_chart(fig2, use_container_width=True)
     
     conn.close()
+
+# MÓDULO DE INSPECCIONES VISUALES
+elif modulo == "👁️ Inspecciones Visuales":
+    st.title("👁️ Inspecciones Visuales - TPS en Tiempo Real")
     
-# Módulo de Gestión de Productos
-elif modulo == "📦 Gestión de Productos":
-    st.title("📦 Gestión de Productos Agroindustriales")
-    
-    tab1, tab2, tab3 = st.tabs(["➕ Nuevo Producto", "📋 Lista de Productos", "📊 Análisis"])
+    tab1, tab2, tab3 = st.tabs(["📝 Nueva Inspección", "📋 Historial", "📊 Análisis"])
     
     with tab1:
-        st.subheader("➕ Registrar Nuevo Producto")
+        st.subheader("📝 Registrar Inspección Visual")
         
-        with st.form("form_producto"):
+        with st.form("form_inspeccion"):
             col1, col2 = st.columns(2)
             
             with col1:
-                nombre_producto = st.text_input("Nombre del Producto", placeholder="Ej: Espárragos Verdes")
-                variedad = st.text_input("Variedad", placeholder="Ej: UC-157")
-                categoria = st.selectbox("Categoría", ["Hortalizas", "Frutas", "Berries", "Legumbres", "Granos"])
+                conn = get_connection()
+                lotes = pd.read_sql_query("""
+                    SELECT lp.codigo_lote, pa.nombre_producto, lp.cantidad_kg
+                    FROM lotes_produccion lp
+                    JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+                    WHERE lp.estado_lote IN ('NUEVO', 'EN_PROCESO')
+                """, conn)
+                conn.close()
+                
+                if not lotes.empty:
+                    lote_seleccionado = st.selectbox("Lote a Inspeccionar", 
+                        options=lotes['codigo_lote'].tolist(),
+                        format_func=lambda x: f"{x} - {lotes[lotes['codigo_lote']==x]['nombre_producto'].iloc[0]}")
+                
+                inspector = st.text_input("Inspector", placeholder="Nombre del inspector")
+                color_evaluacion = st.selectbox("Evaluación de Color", 
+                    ["Excelente", "Bueno", "Regular", "Deficiente"])
+                forma_evaluacion = st.selectbox("Evaluación de Forma", 
+                    ["Uniforme", "Ligeramente irregular", "Irregular", "Deforme"])
             
             with col2:
-                origen_campo = st.selectbox("Origen/Campo", ["Virú", "Chincha", "Trujillo", "Ica", "Piura", "Lambayeque"])
-                temporada = st.text_input("Temporada", placeholder="Ej: 2024-A")
-                estado = st.selectbox("Estado", ["Activo", "Inactivo", "En desarrollo"])
+                tamano_evaluacion = st.text_input("Evaluación de Tamaño", placeholder="Ej: 18-22 cm")
+                defectos_visuales = st.text_area("Defectos Visuales Detectados", 
+                    placeholder="Describir defectos encontrados...")
+                porcentaje_conformidad = st.slider("Porcentaje de Conformidad", 0.0, 100.0, 95.0, 0.1)
+                observaciones = st.text_area("Observaciones", 
+                    placeholder="Comentarios adicionales...")
             
-            submitted = st.form_submit_button("💾 Guardar Producto", use_container_width=True)
+            # Simulación de tiempo de procesamiento
+            tiempo_procesamiento = st.number_input("Tiempo de Procesamiento (minutos)", 
+                min_value=0.1, value=2.5, step=0.1)
+            
+            submitted = st.form_submit_button("👁️ Registrar Inspección", use_container_width=True)
             
             if submitted:
-                if nombre_producto and variedad:
-                    codigo_producto = generar_codigo_producto()
+                if lote_seleccionado and inspector:
+                    codigo_inspeccion = generar_codigo_inspeccion()
+                    resultado_visual = "APROBADO" if porcentaje_conformidad >= 90 else "RECHAZADO" if porcentaje_conformidad < 70 else "OBSERVADO"
+                    
                     conn = get_connection()
                     cursor = conn.cursor()
                     try:
                         cursor.execute('''
-                            INSERT INTO productos_agro (codigo_producto, nombre_producto, variedad, categoria, origen_campo, temporada, estado, fecha_registro)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (codigo_producto, nombre_producto, variedad, categoria, origen_campo, temporada, estado, date.today()))
+                            INSERT INTO inspecciones_visuales (codigo_inspeccion, codigo_lote, inspector, color_evaluacion, forma_evaluacion, tamano_evaluacion, defectos_visuales, porcentaje_conformidad, resultado_visual, observaciones, tiempo_procesamiento)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (codigo_inspeccion, lote_seleccionado, inspector, color_evaluacion, forma_evaluacion, tamano_evaluacion, defectos_visuales, porcentaje_conformidad, resultado_visual, observaciones, tiempo_procesamiento))
                         conn.commit()
-                        st.success(f"✅ Producto registrado: {codigo_producto}")
+                        st.success(f"✅ Inspección registrada: {codigo_inspeccion}")
+                        st.balloons()
+                        
+                        # Mostrar resultado
+                        if resultado_visual == "APROBADO":
+                            st.markdown(f'<div class="status-aprobado">✅ LOTE APROBADO - {porcentaje_conformidad}% conformidad</div>', unsafe_allow_html=True)
+                        elif resultado_visual == "RECHAZADO":
+                            st.markdown(f'<div class="status-rechazado">❌ LOTE RECHAZADO - {porcentaje_conformidad}% conformidad</div>', unsafe_allow_html=True)
+                        else:
+                            st.markdown(f'<div class="status-pendiente">⚠️ LOTE EN OBSERVACIÓN - {porcentaje_conformidad}% conformidad</div>', unsafe_allow_html=True)
+                            
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
+                    finally:
+                        conn.close()
+                else:
+                    st.error("❌ Complete los campos obligatorios")
+    
+    with tab2:
+        st.subheader("📋 Historial de Inspecciones")
+        
+        conn = get_connection()
+        inspecciones_df = pd.read_sql_query("""
+            SELECT iv.*, pa.nombre_producto, lp.cantidad_kg
+            FROM inspecciones_visuales iv
+            JOIN lotes_produccion lp ON iv.codigo_lote = lp.codigo_lote
+            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+            ORDER BY iv.fecha_inspeccion DESC
+        """, conn)
+        conn.close()
+        
+        if not inspecciones_df.empty:
+            st.dataframe(inspecciones_df, use_container_width=True, height=400)
+            
+            # Métricas
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("📋 Total Inspecciones", len(inspecciones_df))
+            with col2:
+                aprobadas = len(inspecciones_df[inspecciones_df['resultado_visual'] == 'APROBADO'])
+                st.metric("✅ Aprobadas", aprobadas)
+            with col3:
+                tiempo_promedio = inspecciones_df['tiempo_procesamiento'].mean()
+                st.metric("⏱️ Tiempo Promedio", f"{tiempo_promedio:.1f} min")
+            with col4:
+                conformidad_promedio = inspecciones_df['porcentaje_conformidad'].mean()
+                st.metric("📊 Conformidad Promedio", f"{conformidad_promedio:.1f}%")
+        else:
+            st.info("👁️ No hay inspecciones registradas")
+    
+    with tab3:
+        st.subheader("📊 Análisis de Inspecciones Visuales")
+        
+        conn = get_connection()
+        inspecciones_df = pd.read_sql_query("""
+            SELECT iv.*, pa.nombre_producto, pa.categoria
+            FROM inspecciones_visuales iv
+            JOIN lotes_produccion lp ON iv.codigo_lote = lp.codigo_lote
+            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+        """, conn)
+        conn.close()
+        
+        if not inspecciones_df.empty:
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Distribución de resultados
+                resultado_dist = inspecciones_df['resultado_visual'].value_counts().reset_index()
+                resultado_dist.columns = ['resultado', 'cantidad']
+                
+                fig = px.pie(resultado_dist, values='cantidad', names='resultado',
+                           title='Distribución de Resultados de Inspección',
+                           color_discrete_map={'APROBADO': '#10b981', 'RECHAZADO': '#ef4444', 'OBSERVADO': '#f59e0b'})
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                # Conformidad por producto
+                conformidad_producto = inspecciones_df.groupby('nombre_producto')['porcentaje_conformidad'].mean().reset_index()
+                
+                fig2 = px.bar(conformidad_producto, x='nombre_producto', y='porcentaje_conformidad',
+                            title='Conformidad Promedio por Producto (%)')
+                st.plotly_chart(fig2, use_container_width=True)
+
+# MÓDULO DE LECTURAS DE SENSORES
+elif modulo == "📡 Lecturas de Sensores":
+    st.title("📡 Lecturas de Sensores IoT - TPS en Tiempo Real")
+    
+    tab1, tab2, tab3 = st.tabs(["📊 Monitoreo Actual", "📈 Histórico", "⚙️ Configuración"])
+    
+    with tab1:
+        st.subheader("📊 Monitoreo de Sensores en Tiempo Real")
+        
+        # Botón para simular nueva lectura
+        if st.button("🔄 Actualizar Lecturas de Sensores"):
+            st.rerun()
+        
+        # Lecturas actuales simuladas
+        col1, col2, col3 = st.columns(3)
+        
+        lectura_actual = simular_lectura_sensores()
+        
+        with col1:
+            st.markdown("### 🌡️ Sensor de Temperatura")
+            temp_status = "Normal" if 2.0 <= lectura_actual['temperatura'] <= 8.0 else "Alerta"
+            st.metric("Temperatura Actual", f"{lectura_actual['temperatura']}°C", 
+                     delta=f"Estado: {temp_status}")
+            
+            st.markdown("### ⚖️ Sensor de Peso")
+            st.metric("Peso Promedio", f"{lectura_actual['peso']} kg")
+        
+        with col2:
+            st.markdown("### 💧 Sensor de Humedad")
+            hum_status = "Normal" if 85.0 <= lectura_actual['humedad'] <= 95.0 else "Alerta"
+            st.metric("Humedad Relativa", f"{lectura_actual['humedad']}%", 
+                     delta=f"Estado: {hum_status}")
+            
+            st.markdown("### 🧪 Sensor de pH")
+            ph_status = "Normal" if 6.0 <= lectura_actual['ph'] <= 7.5 else "Alerta"
+            st.metric("Nivel de pH", f"{lectura_actual['ph']}", 
+                     delta=f"Estado: {ph_status}")
+        
+        with col3:
+            st.markdown("### 🍯 Sensor de Brix")
+            st.metric("Grados Brix", f"{lectura_actual['brix']}°")
+            
+            # Registrar nueva lectura
+            with st.form("form_sensor"):
+                conn = get_connection()
+                lotes = pd.read_sql_query("SELECT codigo_lote FROM lotes_produccion WHERE estado_lote IN ('NUEVO', 'EN_PROCESO')", conn)
+                conn.close()
+                
+                if not lotes.empty:
+                    lote_sensor = st.selectbox("Lote para Registro", lotes['codigo_lote'].tolist())
+                    
+                    if st.form_submit_button("📡 Registrar Lectura"):
+                        codigo_lectura = generar_codigo_sensor()
+                        conn = get_connection()
+                        cursor = conn.cursor()
+                        try:
+                            cursor.execute('''
+                                INSERT INTO lecturas_sensores (codigo_lectura, codigo_lote, sensor_temperatura, sensor_peso, sensor_humedad, sensor_ph, sensor_brix, estado_sensores, alerta_generada)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ''', (codigo_lectura, lote_sensor, lectura_actual['temperatura'], lectura_actual['peso'], lectura_actual['humedad'], lectura_actual['ph'], lectura_actual['brix'], 'OPERATIVO', 0))
+                            conn.commit()
+                            st.success(f"✅ Lectura registrada: {codigo_lectura}")
+                        except Exception as e:
+                            st.error(f"❌ Error: {e}")
+                        finally:
+                            conn.close()
+    
+    with tab2:
+        st.subheader("📈 Histórico de Sensores")
+        
+        conn = get_connection()
+        sensores_df = pd.read_sql_query("""
+            SELECT ls.*, pa.nombre_producto
+            FROM lecturas_sensores ls
+            JOIN lotes_produccion lp ON ls.codigo_lote = lp.codigo_lote
+            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+            ORDER BY ls.timestamp_lectura DESC
+        """, conn)
+        conn.close()
+        
+        if not sensores_df.empty:
+            st.dataframe(sensores_df, use_container_width=True, height=400)
+            
+            # Gráficos de tendencias
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Tendencia de temperatura
+                sensores_df['timestamp_lectura'] = pd.to_datetime(sensores_df['timestamp_lectura'])
+                fig = px.line(sensores_df.tail(20), x='timestamp_lectura', y='sensor_temperatura',
+                            title='Tendencia de Temperatura (Últimas 20 lecturas)')
+                fig.add_hline(y=2.0, line_dash="dash", line_color="blue", annotation_text="Mín")
+                fig.add_hline(y=8.0, line_dash="dash", line_color="red", annotation_text="Máx")
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                # Tendencia de humedad
+                fig2 = px.line(sensores_df.tail(20), x='timestamp_lectura', y='sensor_humedad',
+                             title='Tendencia de Humedad (Últimas 20 lecturas)')
+                fig2.add_hline(y=85.0, line_dash="dash", line_color="blue", annotation_text="Mín")
+                fig2.add_hline(y=95.0, line_dash="dash", line_color="red", annotation_text="Máx")
+                st.plotly_chart(fig2, use_container_width=True)
+        else:
+            st.info("📡 No hay lecturas de sensores registradas")
+    
+    with tab3:
+        st.subheader("⚙️ Configuración de Sensores")
+        
+        st.markdown("### 🎛️ Parámetros de Sensores")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**🌡️ Sensor de Temperatura**")
+            temp_min = st.number_input("Temperatura Mínima (°C)", value=2.0)
+            temp_max = st.number_input("Temperatura Máxima (°C)", value=8.0)
+            
+            st.markdown("**💧 Sensor de Humedad**")
+            hum_min = st.number_input("Humedad Mínima (%)", value=85.0)
+            hum_max = st.number_input("Humedad Máxima (%)", value=95.0)
+        
+        with col2:
+            st.markdown("**🧪 Sensor de pH**")
+            ph_min = st.number_input("pH Mínimo", value=6.0)
+            ph_max = st.number_input("pH Máximo", value=7.5)
+            
+            st.markdown("**⚖️ Sensor de Peso**")
+            peso_tolerancia = st.number_input("Tolerancia de Peso (%)", value=5.0)
+        
+        if st.button("💾 Guardar Configuración"):
+            st.success("✅ Configuración de sensores actualizada")
+
+# MÓDULO DE PRUEBAS FISICOQUÍMICAS
+elif modulo == "🧪 Pruebas Fisicoquímicas":
+    st.title("🧪 Pruebas Fisicoquímicas - Laboratorio TPS")
+    
+    tab1, tab2, tab3 = st.tabs(["🔬 Nueva Prueba", "📋 Resultados", "📊 Análisis"])
+    
+    with tab1:
+        st.subheader("🔬 Registrar Prueba Fisicoquímica")
+        
+        with st.form("form_prueba"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                conn = get_connection()
+                lotes = pd.read_sql_query("""
+                    SELECT lp.codigo_lote, pa.nombre_producto
+                    FROM lotes_produccion lp
+                    JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+                    WHERE lp.estado_lote IN ('NUEVO', 'EN_PROCESO')
+                """, conn)
+                conn.close()
+                
+                if not lotes.empty:
+                    lote_seleccionado = st.selectbox("Lote para Análisis", 
+                        options=lotes['codigo_lote'].tolist(),
+                        format_func=lambda x: f"{x} - {lotes[lotes['codigo_lote']==x]['nombre_producto'].iloc[0]}")
+                
+                laboratorista = st.text_input("Laboratorista", placeholder="Dr./Dra. Nombre")
+                acidez_titulable = st.number_input("Acidez Titulable (%)", min_value=0.0, value=0.15, step=0.01)
+                solidos_solubles = st.number_input("Sólidos Solubles (°Brix)", min_value=0.0, value=12.0, step=0.1)
+            
+            with col2:
+                firmeza = st.number_input("Firmeza (g/mm)", min_value=0.0, value=180.0, step=0.1)
+                contenido_humedad = st.number_input("Contenido de Humedad (%)", min_value=0.0, value=85.0, step=0.1)
+                residuos_pesticidas = st.selectbox("Residuos de Pesticidas", 
+                    ["No detectados", "Dentro de límites", "Excede límites"])
+                microbiologia_resultado = st.selectbox("Resultado Microbiológico", 
+                    ["Negativo", "Positivo", "En proceso"])
+                certificacion_organica = st.checkbox("Certificación Orgánica")
+            
+            submitted = st.form_submit_button("🧪 Registrar Prueba", use_container_width=True)
+            
+            if submitted:
+                if lote_seleccionado and laboratorista:
+                    codigo_prueba = generar_codigo_prueba()
+                    
+                    # Determinar resultado basado en parámetros
+                    resultado_fisicoquimico = "APROBADO"
+                    if residuos_pesticidas == "Excede límites" or microbiologia_resultado == "Positivo":
+                        resultado_fisicoquimico = "RECHAZADO"
+                    elif microbiologia_resultado == "En proceso":
+                        resultado_fisicoquimico = "PENDIENTE"
+                    
+                    conn = get_connection()
+                    cursor = conn.cursor()
+                    try:
+                        cursor.execute('''
+                            INSERT INTO pruebas_fisicoquimicas (codigo_prueba, codigo_lote, laboratorista, acidez_titulable, solidos_solubles, firmeza, contenido_humedad, residuos_pesticidas, microbiologia_resultado, resultado_fisicoquimico, certificacion_organica)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (codigo_prueba, lote_seleccionado, laboratorista, acidez_titulable, solidos_solubles, firmeza, contenido_humedad, residuos_pesticidas, microbiologia_resultado, resultado_fisicoquimico, certificacion_organica))
+                        conn.commit()
+                        st.success(f"✅ Prueba registrada: {codigo_prueba}")
+                        
+                        # Mostrar resultado
+                        if resultado_fisicoquimico == "APROBADO":
+                            st.markdown('<div class="status-aprobado">✅ PRUEBA APROBADA</div>', unsafe_allow_html=True)
+                        elif resultado_fisicoquimico == "RECHAZADO":
+                            st.markdown('<div class="status-rechazado">❌ PRUEBA RECHAZADA</div>', unsafe_allow_html=True)
+                        else:
+                            st.markdown('<div class="status-pendiente">⏳ PRUEBA PENDIENTE</div>', unsafe_allow_html=True)
+                            
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
+                    finally:
+                        conn.close()
+                else:
+                    st.error("❌ Complete los campos obligatorios")
+    
+    with tab2:
+        st.subheader("📋 Resultados de Laboratorio")
+        
+        conn = get_connection()
+        pruebas_df = pd.read_sql_query("""
+            SELECT pf.*, pa.nombre_producto, lp.cantidad_kg
+            FROM pruebas_fisicoquimicas pf
+            JOIN lotes_produccion lp ON pf.codigo_lote = lp.codigo_lote
+            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+            ORDER BY pf.fecha_prueba DESC
+        """, conn)
+        conn.close()
+        
+        if not pruebas_df.empty:
+            st.dataframe(pruebas_df, use_container_width=True, height=400)
+            
+            # Métricas de laboratorio
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("🧪 Total Pruebas", len(pruebas_df))
+            with col2:
+                aprobadas = len(pruebas_df[pruebas_df['resultado_fisicoquimico'] == 'APROBADO'])
+                st.metric("✅ Aprobadas", aprobadas)
+            with col3:
+                organicas = len(pruebas_df[pruebas_df['certificacion_organica'] == 1])
+                st.metric("🌱 Certificación Orgánica", organicas)
+            with col4:
+                brix_promedio = pruebas_df['solidos_solubles'].mean()
+                st.metric("📊 Brix Promedio", f"{brix_promedio:.1f}°")
+        else:
+            st.info("🧪 No hay pruebas fisicoquímicas registradas")
+    
+    with tab3:
+        st.subheader("📊 Análisis de Laboratorio")
+        
+        conn = get_connection()
+        pruebas_df = pd.read_sql_query("""
+            SELECT pf.*, pa.nombre_producto, pa.categoria
+            FROM pruebas_fisicoquimicas pf
+            JOIN lotes_produccion lp ON pf.codigo_lote = lp.codigo_lote
+            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+        """, conn)
+        conn.close()
+        
+        if not pruebas_df.empty:
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Distribución de resultados
+                resultado_dist = pruebas_df['resultado_fisicoquimico'].value_counts().reset_index()
+                resultado_dist.columns = ['resultado', 'cantidad']
+                
+                fig = px.pie(resultado_dist, values='cantidad', names='resultado',
+                           title='Distribución de Resultados Fisicoquímicos',
+                           color_discrete_map={'APROBADO': '#10b981', 'RECHAZADO': '#ef4444', 'PENDIENTE': '#f59e0b'})
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                # Análisis de Brix por producto
+                brix_producto = pruebas_df.groupby('nombre_producto')['solidos_solubles'].mean().reset_index()
+                
+                fig2 = px.bar(brix_producto, x='nombre_producto', y='solidos_solubles',
+                            title='Grados Brix Promedio por Producto')
+                st.plotly_chart(fig2, use_container_width=True)
+
+# MÓDULO DE ALERTAS AUTOMÁTICAS
+elif modulo == "🚨 Alertas Automáticas":
+    st.title("🚨 Sistema de Alertas Automáticas TPS")
+    
+    tab1, tab2, tab3 = st.tabs(["⚡ Alertas Activas", "📊 Historial", "⚙️ Configuración"])
+    
+    with tab1:
+        st.subheader("⚡ Alertas Activas del Sistema")
+        
+        conn = get_connection()
+        alertas_activas = pd.read_sql_query("""
+            SELECT aa.*, pa.nombre_producto, lp.cantidad_kg
+            FROM alertas_automaticas aa
+            JOIN lotes_produccion lp ON aa.codigo_lote = lp.codigo_lote
+            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+            WHERE aa.estado_alerta = 'ACTIVA'
+            ORDER BY aa.fecha_alerta DESC
+        """, conn)
+        conn.close()
+        
+        if not alertas_activas.empty:
+            for _, alerta in alertas_activas.iterrows():
+                criticidad_color = {
+                    'ALTA': '#ef4444',
+                    'MEDIA': '#f59e0b', 
+                    'BAJA': '#10b981'
+                }
+                
+                st.markdown(f"""
+                <div class="alert-box" style="border-left: 4px solid {criticidad_color.get(alerta['nivel_criticidad'], '#6b7280')}">
+                    <h4>🚨 {alerta['tipo_alerta']} - {alerta['nivel_criticidad']}</h4>
+                    <p><strong>Lote:</strong> {alerta['codigo_lote']} ({alerta['nombre_producto']})</p>
+                    <p><strong>Mensaje:</strong> {alerta['mensaje_alerta']}</p>
+                    <p><strong>Parámetro:</strong> {alerta['parametro_afectado']} - Valor: {alerta['valor_detectado']} (Límite: {alerta['valor_limite']})</p>
+                    <p><strong>Fecha:</strong> {alerta['fecha_alerta']}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button(f"✅ Resolver Alerta {alerta['codigo_alerta']}", key=f"resolver_{alerta['id']}"):
+                        conn = get_connection()
+                        cursor = conn.cursor()
+                        cursor.execute("UPDATE alertas_automaticas SET estado_alerta = 'RESUELTA' WHERE id = ?", (alerta['id'],))
+                        conn.commit()
+                        conn.close()
+                        st.success("Alerta marcada como resuelta")
+                        st.rerun()
+                
+                with col2:
+                    accion = st.text_input(f"Acción tomada para {alerta['codigo_alerta']}", key=f"accion_{alerta['id']}")
+                    if st.button(f"💾 Guardar Acción", key=f"guardar_{alerta['id']}"):
+                        if accion:
+                            conn = get_connection()
+                            cursor = conn.cursor()
+                            cursor.execute("UPDATE alertas_automaticas SET accion_tomada = ? WHERE id = ?", (accion, alerta['id']))
+                            conn.commit()
+                            conn.close()
+                            st.success("Acción guardada")
+        else:
+            st.success("✅ No hay alertas activas en el sistema")
+        
+        # Generar nueva alerta de ejemplo
+        st.markdown("---")
+        st.subheader("🔧 Simular Nueva Alerta")
+        
+        with st.form("form_alerta"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                conn = get_connection()
+                lotes = pd.read_sql_query("SELECT codigo_lote FROM lotes_produccion WHERE estado_lote IN ('NUEVO', 'EN_PROCESO')", conn)
+                conn.close()
+                
+                if not lotes.empty:
+                    lote_alerta = st.selectbox("Lote", lotes['codigo_lote'].tolist())
+                
+                tipo_alerta = st.selectbox("Tipo de Alerta", 
+                    ["TEMPERATURA", "HUMEDAD", "PH", "PESO", "CALIDAD", "SENSOR"])
+                nivel_criticidad = st.selectbox("Nivel de Criticidad", ["BAJA", "MEDIA", "ALTA"])
+            
+            with col2:
+                mensaje_alerta = st.text_input("Mensaje de Alerta", 
+                    placeholder="Descripción del problema detectado")
+                parametro_afectado = st.text_input("Parámetro Afectado", placeholder="Ej: Temperatura")
+                valor_detectado = st.number_input("Valor Detectado", value=0.0)
+                valor_limite = st.number_input("Valor Límite", value=0.0)
+            
+            if st.form_submit_button("🚨 Generar Alerta"):
+                if lote_alerta and mensaje_alerta:
+                    codigo_alerta = f"ALT-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
+                    conn = get_connection()
+                    cursor = conn.cursor()
+                    try:
+                        cursor.execute('''
+                            INSERT INTO alertas_automaticas (codigo_alerta, codigo_lote, tipo_alerta, nivel_criticidad, mensaje_alerta, parametro_afectado, valor_detectado, valor_limite, estado_alerta)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (codigo_alerta, lote_alerta, tipo_alerta, nivel_criticidad, mensaje_alerta, parametro_afectado, valor_detectado, valor_limite, 'ACTIVA'))
+                        conn.commit()
+                        st.success(f"🚨 Alerta generada: {codigo_alerta}")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
+                    finally:
+                        conn.close()
+    
+    with tab2:
+        st.subheader("📊 Historial de Alertas")
+        
+        conn = get_connection()
+        alertas_df = pd.read_sql_query("""
+            SELECT aa.*, pa.nombre_producto
+            FROM alertas_automaticas aa
+            JOIN lotes_produccion lp ON aa.codigo_lote = lp.codigo_lote
+            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+            ORDER BY aa.fecha_alerta DESC
+        """, conn)
+        conn.close()
+        
+        if not alertas_df.empty:
+            st.dataframe(alertas_df, use_container_width=True, height=400)
+            
+            # Métricas de alertas
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("🚨 Total Alertas", len(alertas_df))
+            with col2:
+                activas = len(alertas_df[alertas_df['estado_alerta'] == 'ACTIVA'])
+                st.metric("⚡ Activas", activas)
+            with col3:
+                resueltas = len(alertas_df[alertas_df['estado_alerta'] == 'RESUELTA'])
+                st.metric("✅ Resueltas", resueltas)
+            with col4:
+                criticas = len(alertas_df[alertas_df['nivel_criticidad'] == 'ALTA'])
+                st.metric("🔴 Críticas", criticas)
+        else:
+            st.info("🚨 No hay alertas en el historial")
+    
+    with tab3:
+        st.subheader("⚙️ Configuración de Alertas")
+        
+        st.markdown("### 🎛️ Parámetros de Alertas Automáticas")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**🌡️ Alertas de Temperatura**")
+            temp_alerta_min = st.number_input("Temperatura Mínima Alerta (°C)", value=1.0)
+            temp_alerta_max = st.number_input("Temperatura Máxima Alerta (°C)", value=9.0)
+            
+            st.markdown("**💧 Alertas de Humedad**")
+            hum_alerta_min = st.number_input("Humedad Mínima Alerta (%)", value=80.0)
+            hum_alerta_max = st.number_input("Humedad Máxima Alerta (%)", value=98.0)
+        
+        with col2:
+            st.markdown("**🧪 Alertas de pH**")
+            ph_alerta_min = st.number_input("pH Mínimo Alerta", value=5.5)
+            ph_alerta_max = st.number_input("pH Máximo Alerta", value=8.0)
+            
+            st.markdown("**⚖️ Alertas de Peso**")
+            peso_variacion_max = st.number_input("Variación Máxima Peso (%)", value=10.0)
+        
+        if st.button("💾 Guardar Configuración de Alertas"):
+            st.success("✅ Configuración de alertas actualizada")
+
+# MÓDULO DE INFORMES CONSOLIDADOS
+elif modulo == "📊 Informes Consolidados":
+    st.title("📊 Informes Consolidados de Calidad")
+    
+    tab1, tab2, tab3 = st.tabs(["📋 Generar Informe", "📊 Informes Existentes", "📈 Análisis Ejecutivo"])
+    
+    with tab1:
+        st.subheader("📋 Generar Informe Consolidado")
+        
+        with st.form("form_informe"):
+            conn = get_connection()
+            lotes_disponibles = pd.read_sql_query("""
+                SELECT DISTINCT lp.codigo_lote, pa.nombre_producto, lp.cantidad_kg
+                FROM lotes_produccion lp
+                JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+                LEFT JOIN informes_calidad ic ON lp.codigo_lote = ic.codigo_lote
+                WHERE ic.codigo_lote IS NULL AND lp.estado_lote = 'EN_PROCESO'
+            """, conn)
+            conn.close()
+            
+            if not lotes_disponibles.empty:
+                lote_informe = st.selectbox("Lote para Informe", 
+                    options=lotes_disponibles['codigo_lote'].tolist(),
+                    format_func=lambda x: f"{x} - {lotes_disponibles[lotes_disponibles['codigo_lote']==x]['nombre_producto'].iloc[0]}")
+                
+                responsable_aprobacion = st.text_input("Responsable de Aprobación", 
+                    placeholder="Ing. Nombre Apellido")
+                
+                # Obtener resultados automáticamente
+                conn = get_connection()
+                
+                # Resultado inspección visual
+                inspeccion = pd.read_sql_query(
+                    "SELECT resultado_visual FROM inspecciones_visuales WHERE codigo_lote = ? ORDER BY fecha_inspeccion DESC LIMIT 1", 
+                    conn, params=[lote_informe])
+                resultado_inspeccion = inspeccion['resultado_visual'].iloc[0] if not inspeccion.empty else "PENDIENTE"
+                
+                # Resultado sensores
+                sensores = pd.read_sql_query(
+                    "SELECT estado_sensores FROM lecturas_sensores WHERE codigo_lote = ? ORDER BY timestamp_lectura DESC LIMIT 1", 
+                    conn, params=[lote_informe])
+                resultado_sensores = "NORMAL" if not sensores.empty and sensores['estado_sensores'].iloc[0] == 'OPERATIVO' else "ALERTA"
+                
+                # Resultado fisicoquímico
+                fisicoquimico = pd.read_sql_query(
+                    "SELECT resultado_fisicoquimico FROM pruebas_fisicoquimicas WHERE codigo_lote = ? ORDER BY fecha_prueba DESC LIMIT 1", 
+                    conn, params=[lote_informe])
+                resultado_fisicoquimico = fisicoquimico['resultado_fisicoquimico'].iloc[0] if not fisicoquimico.empty else "PENDIENTE"
+                
+                conn.close()
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.write(f"**Inspección Visual:** {resultado_inspeccion}")
+                    st.write(f"**Estado Sensores:** {resultado_sensores}")
+                    st.write(f"**Resultado Fisicoquímico:** {resultado_fisicoquimico}")
+                
+                with col2:
+                    resultado_envases = st.selectbox("Resultado Envases", ["APROBADO", "RECHAZADO", "PENDIENTE"])
+                    certificaciones = st.multiselect("Certificaciones Obtenidas", 
+                        ["Global GAP", "HACCP", "Organic", "Fair Trade", "BRC", "SQF"])
+                    destino_comercial = st.selectbox("Destino Comercial", 
+                        ["Exportación USA", "Exportación Europa", "Exportación Asia", "Mercado Nacional"])
+                
+                # Calcular decisión final automática
+                resultados = [resultado_inspeccion, resultado_fisicoquimico, resultado_envases]
+                if all(r == "APROBADO" for r in resultados) and resultado_sensores == "NORMAL":
+                    decision_final = "APROBADO"
+                    porcentaje_calidad = 95.0
+                elif any(r == "RECHAZADO" for r in resultados):
+                    decision_final = "RECHAZADO"
+                    porcentaje_calidad = 60.0
+                else:
+                    decision_final = "PENDIENTE"
+                    porcentaje_calidad = 75.0
+                
+                st.write(f"**Decisión Final Automática:** {decision_final}")
+                st.write(f"**Porcentaje de Calidad:** {porcentaje_calidad}%")
+                
+                submitted = st.form_submit_button("📊 Generar Informe Consolidado", use_container_width=True)
+                
+                if submitted:
+                    if responsable_aprobacion:
+                        codigo_informe = f"INF-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
+                        conn = get_connection()
+                        cursor = conn.cursor()
+                        try:
+                            cursor.execute('''
+                                INSERT INTO informes_calidad (codigo_informe, codigo_lote, resultado_inspeccion_visual, resultado_sensores, resultado_fisicoquimico, resultado_envases, decision_final, porcentaje_calidad_total, certificaciones_obtenidas, destino_comercial, responsable_aprobacion, fecha_aprobacion)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ''', (codigo_informe, lote_informe, resultado_inspeccion, resultado_sensores, resultado_fisicoquimico, resultado_envases, decision_final, porcentaje_calidad, ', '.join(certificaciones), destino_comercial, responsable_aprobacion, datetime.datetime.now()))
+                            
+                            # Actualizar estado del lote
+                            nuevo_estado = "APROBADO" if decision_final == "APROBADO" else "RECHAZADO" if decision_final == "RECHAZADO" else "EN_REVISION"
+                            cursor.execute("UPDATE lotes_produccion SET estado_lote = ? WHERE codigo_lote = ?", (nuevo_estado, lote_informe))
+                            
+                            conn.commit()
+                            st.success(f"✅ Informe consolidado generado: {codigo_informe}")
+                            
+                            # Mostrar resultado final
+                            if decision_final == "APROBADO":
+                                st.markdown('<div class="status-aprobado">✅ LOTE APROBADO PARA COMERCIALIZACIÓN</div>', unsafe_allow_html=True)
+                            elif decision_final == "RECHAZADO":
+                                st.markdown('<div class="status-rechazado">❌ LOTE RECHAZADO</div>', unsafe_allow_html=True)
+                            else:
+                                st.markdown('<div class="status-pendiente">⏳ LOTE EN REVISIÓN</div>', unsafe_allow_html=True)
+                                
+                        except Exception as e:
+                            st.error(f"❌ Error: {e}")
+                        finally:
+                            conn.close()
+                    else:
+                        st.error("❌ Ingrese el responsable de aprobación")
+            else:
+                st.info("📋 No hay lotes disponibles para generar informes")
+    
+    with tab2:
+        st.subheader("📊 Informes Existentes")
+        
+        conn = get_connection()
+        informes_df = pd.read_sql_query("""
+            SELECT ic.*, pa.nombre_producto, lp.cantidad_kg, lp.campo_origen
+            FROM informes_calidad ic
+            JOIN lotes_produccion lp ON ic.codigo_lote = lp.codigo_lote
+            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+            ORDER BY ic.fecha_informe DESC
+        """, conn)
+        conn.close()
+        
+        if not informes_df.empty:
+            st.dataframe(informes_df, use_container_width=True, height=400)
+            
+            # Métricas de informes
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("📊 Total Informes", len(informes_df))
+            with col2:
+                aprobados = len(informes_df[informes_df['decision_final'] == 'APROBADO'])
+                st.metric("✅ Lotes Aprobados", aprobados)
+            with col3:
+                calidad_promedio = informes_df['porcentaje_calidad_total'].mean()
+                st.metric("📈 Calidad Promedio", f"{calidad_promedio:.1f}%")
+            with col4:
+                exportacion = len(informes_df[informes_df['destino_comercial'].str.contains('Exportación', na=False)])
+                st.metric("🌍 Para Exportación", exportacion)
+        else:
+            st.info("📊 No hay informes consolidados generados")
+    
+    with tab3:
+        st.subheader("📈 Análisis Ejecutivo")
+        
+        conn = get_connection()
+        informes_df = pd.read_sql_query("""
+            SELECT ic.*, pa.nombre_producto, pa.categoria, lp.campo_origen
+            FROM informes_calidad ic
+            JOIN lotes_produccion lp ON ic.codigo_lote = lp.codigo_lote
+            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+        """, conn)
+        conn.close()
+        
+        if not informes_df.empty:
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Decisiones finales
+                decision_dist = informes_df['decision_final'].value_counts().reset_index()
+                decision_dist.columns = ['decision', 'cantidad']
+                
+                fig = px.pie(decision_dist, values='cantidad', names='decision',
+                           title='Distribución de Decisiones Finales',
+                           color_discrete_map={'APROBADO': '#10b981', 'RECHAZADO': '#ef4444', 'PENDIENTE': '#f59e0b'})
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Calidad por campo
+                calidad_campo = informes_df.groupby('campo_origen')['porcentaje_calidad_total'].mean().reset_index()
+                
+                fig3 = px.bar(calidad_campo, x='campo_origen', y='porcentaje_calidad_total',
+                            title='Calidad Promedio por Campo de Origen')
+                st.plotly_chart(fig3, use_container_width=True)
+            
+            with col2:
+                # Destinos comerciales
+                destino_dist = informes_df['destino_comercial'].value_counts().reset_index()
+                destino_dist.columns = ['destino', 'cantidad']
+                
+                fig2 = px.bar(destino_dist, x='destino', y='cantidad',
+                            title='Distribución por Destino Comercial')
+                st.plotly_chart(fig2, use_container_width=True)
+                
+                # Tendencia de calidad
+                informes_df['fecha_informe'] = pd.to_datetime(informes_df['fecha_informe'])
+                informes_df['mes'] = informes_df['fecha_informe'].dt.to_period('M')
+                tendencia_calidad = informes_df.groupby('mes')['porcentaje_calidad_total'].mean().reset_index()
+                tendencia_calidad['mes'] = tendencia_calidad['mes'].astype(str)
+                
+                fig4 = px.line(tendencia_calidad, x='mes', y='porcentaje_calidad_total',
+                             title='Tendencia de Calidad Mensual', markers=True)
+                st.plotly_chart(fig4, use_container_width=True)
+
+# MÓDULO DE TRAZABILIDAD INTERNACIONAL
+elif modulo == "🌍 Trazabilidad Internacional":
+    st.title("🌍 Trazabilidad Internacional - Exportaciones")
+    
+    tab1, tab2, tab3 = st.tabs(["🚢 Nuevo Envío", "📦 Seguimiento", "📊 Reportes"])
+    
+    with tab1:
+        st.subheader("🚢 Registrar Envío Internacional")
+        
+        with st.form("form_trazabilidad"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                conn = get_connection()
+                lotes_aprobados = pd.read_sql_query("""
+                    SELECT lp.codigo_lote, pa.nombre_producto, ic.destino_comercial
+                    FROM lotes_produccion lp
+                    JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+                    JOIN informes_calidad ic ON lp.codigo_lote = ic.codigo_lote
+                    WHERE ic.decision_final = 'APROBADO' AND lp.estado_lote = 'APROBADO'
+                """, conn)
+                conn.close()
+                
+                if not lotes_aprobados.empty:
+                    lote_envio = st.selectbox("Lote Aprobado", 
+                        options=lotes_aprobados['codigo_lote'].tolist(),
+                        format_func=lambda x: f"{x} - {lotes_aprobados[lotes_aprobados['codigo_lote']==x]['nombre_producto'].iloc[0]}")
+                
+                pais_destino = st.selectbox("País de Destino", 
+                    ["Estados Unidos", "Países Bajos", "Reino Unido", "Alemania", "Francia", "Canadá", "Japón"])
+                cliente_internacional = st.text_input("Cliente Internacional", 
+                    placeholder="Nombre del importador")
+                certificacion_requerida = st.multiselect("Certificaciones Requeridas", 
+                    ["Global GAP", "HACCP", "Organic", "Fair Trade", "BRC", "SQF", "FDA"])
+            
+            with col2:
+                numero_contenedor = st.text_input("Número de Contenedor", 
+                    placeholder="ABCD1234567")
+                fecha_embarque = st.date_input("Fecha de Embarque", value=date.today() + timedelta(days=7))
+                puerto_destino = st.text_input("Puerto de Destino", 
+                    placeholder="Puerto de destino")
+                documentos_exportacion = st.text_area("Documentos de Exportación", 
+                    placeholder="Lista de documentos requeridos...")
+                estado_envio = st.selectbox("Estado del Envío", 
+                    ["PREPARACION", "EMBARCADO", "EN_TRANSITO", "LLEGADA", "ENTREGADO"])
+            
+            submitted = st.form_submit_button("🌍 Registrar Trazabilidad", use_container_width=True)
+            
+            if submitted:
+                if lote_envio and cliente_internacional:
+                    codigo_trazabilidad = f"TRZ-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
+                    conn = get_connection()
+                    cursor = conn.cursor()
+                    try:
+                        cursor.execute('''
+                            INSERT INTO trazabilidad_internacional (codigo_trazabilidad, codigo_lote, pais_destino, cliente_internacional, certificacion_requerida, numero_contenedor, fecha_embarque, puerto_destino, documentos_exportacion, estado_envio)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (codigo_trazabilidad, lote_envio, pais_destino, cliente_internacional, ', '.join(certificacion_requerida), numero_contenedor, fecha_embarque, puerto_destino, documentos_exportacion, estado_envio))
+                        
+                        # Actualizar estado del lote
+                        cursor.execute("UPDATE lotes_produccion SET estado_lote = 'EXPORTADO' WHERE codigo_lote = ?", (lote_envio,))
+                        
+                        conn.commit()
+                        st.success(f"✅ Trazabilidad registrada: {codigo_trazabilidad}")
                         st.balloons()
                     except Exception as e:
                         st.error(f"❌ Error: {e}")
@@ -590,45 +1369,135 @@ elif modulo == "📦 Gestión de Productos":
                     st.error("❌ Complete los campos obligatorios")
     
     with tab2:
-        st.subheader("📋 Lista de Productos Agroindustriales")
+        st.subheader("📦 Seguimiento de Envíos")
         
         conn = get_connection()
-        productos_df = pd.read_sql_query("SELECT * FROM productos_agro ORDER BY fecha_registro DESC", conn)
+        trazabilidad_df = pd.read_sql_query("""
+            SELECT ti.*, pa.nombre_producto, lp.cantidad_kg
+            FROM trazabilidad_internacional ti
+            JOIN lotes_produccion lp ON ti.codigo_lote = lp.codigo_lote
+            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+            ORDER BY ti.fecha_embarque DESC
+        """, conn)
         conn.close()
         
-        if not productos_df.empty:
-            # Función para editar producto
-            def editar_producto(row):
-                with st.form(f"form_editar_{row['id']}"):
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        nuevo_nombre = st.text_input("Nombre", value=row['nombre_producto'])
-                        nueva_variedad = st.text_input("Variedad", value=row['variedad'])
-                        nueva_categoria = st.selectbox("Categoría", 
-                            ["Hortalizas", "Frutas", "Berries", "Legumbres", "Granos"],
-                            index=["Hortalizas", "Frutas", "Berries", "Legumbres", "Granos"].index(row['categoria']))
-                    
-                    with col2:
-                        nuevo_origen = st.selectbox("Origen", 
-                            ["Virú", "Chincha", "Trujillo", "Ica", "Piura", "Lambayeque"],
-                            index=["Virú", "Chincha", "Trujillo", "Ica", "Piura", "Lambayeque"].index(row['origen_campo']))
-                        nueva_temporada = st.text_input("Temporada", value=row['temporada'])
-                        nuevo_estado = st.selectbox("Estado", 
-                            ["Activo", "Inactivo", "En desarrollo"],
-                            index=["Activo", "Inactivo", "En desarrollo"].index(row['estado']))
-                    
-                    if st.form_submit_button("💾 Guardar Cambios"):
-                        conn = get_connection()
-                        cursor = conn.cursor()
-                        try:
-                            cursor.execute('''
-                                UPDATE productos_agro 
-                                SET nombre_producto=?, variedad=?, categoria=?, origen_campo=?, temporada=?, estado=?
-                                WHERE id=?
-                            ''', (nuevo_nombre, nueva_variedad, nueva_categoria, nuevo_origen, nueva_temporada, nuevo_estado, row['id']))
-                            conn.commit()
-                            st.success("✅ Producto actualizado")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"❌ Error: {e}")
+        if not trazabilidad_df.empty:
+            # Filtro por estado
+            estado_filtro = st.selectbox("Filtrar por Estado", 
+                ["Todos"] + list(trazabilidad_df['estado_envio'].unique()))
+            
+            if estado_filtro != "Todos":
+                df_filtrado = trazabilidad_df[trazabilidad_df['estado_envio'] == estado_filtro]
+            else:
+                df_filtrado = trazabilidad_df
+            
+            st.dataframe(df_filtrado, use_container_width=True, height=400)
+            
+            # Métricas de exportación
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("🚢 Total Envíos", len(df_filtrado))
+            with col2:
+                en_transito = len(df_filtrado[df_filtrado['estado_envio'] == 'EN_TRANSITO'])
+                st.metric("🌊 En Tránsito", en_transito)
+            with col3:
+                entregados = len(df_filtrado[df_filtrado['estado_envio'] == 'ENTREGADO'])
+                st.metric("✅ Entregados", entregados)
+            with col4:
+                paises_unicos = df_filtrado['pais_destino'].nunique()
+                st.metric("🌍 Países Destino", paises_unicos)
+        else:
+            st.info("🌍 No hay envíos internacionales registrados")
+    
+    with tab3:
+        st.subheader("📊 Reportes de Exportación")
+        
+        conn = get_connection()
+        trazabilidad_df = pd.read_sql_query("""
+            SELECT ti.*, pa.nombre_producto, pa.categoria, lp.cantidad_kg
+            FROM trazabilidad_internacional ti
+            JOIN lotes_produccion lp ON ti.codigo_lote = lp.codigo_lote
+            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+        """, conn)
+        conn.close()
+        
+        if not trazabilidad_df.empty:
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Exportaciones por país
+                pais_dist = trazabilidad_df['pais_destino'].value_counts().reset_index()
+                pais_dist.columns = ['pais', 'cantidad']
+                
+                fig = px.bar(pais_dist, x='pais', y='cantidad',
+                           title='Exportaciones por País de Destino')
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                # Estados de envío
+                estado_dist = trazabilidad_df['estado_envio'].value_counts().reset_index()
+                estado_dist.columns = ['estado', 'cantidad']
+                
+                fig2 = px.pie(estado_dist, values='cantidad', names='estado',
+                            title='Distribución por Estado de Envío')
+                st.plotly_chart(fig2, use_container_width=True)
+            
+            # Volumen exportado por producto
+            volumen_producto = trazabilidad_df.groupby('nombre_producto')['cantidad_kg'].sum().reset_index()
+            
+            fig3 = px.bar(volumen_producto, x='nombre_producto', y='cantidad_kg',
+                        title='Volumen Exportado por Producto (kg)')
+            st.plotly_chart(fig3, use_container_width=True)
+
+# Footer
+st.sidebar.markdown("---")
+st.sidebar.markdown("""
+<div style='text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;'>
+    <h4>🌱 DANPER TPS v1.0</h4>
+    <p style='margin: 0; font-size: 0.8rem;'>Sistema de Procesamiento de Transacciones</p>
+    <p style='margin: 0; font-size: 0.8rem;'>Control de Calidad Agroindustrial</p>
+    <p style='margin: 0; font-size: 0.8rem;'>Odoo 17 | PostgreSQL | Python + XML</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Información del TPS
+with st.sidebar.expander("ℹ️ Información del TPS"):
+    st.markdown("""
+    **Tipo de TPS:** Control de Calidad Agroindustrial
+    
+    **Funciones Principales:**
+    - 👁️ Inspecciones visuales automatizadas
+    - 📡 Lecturas de sensores IoT
+    - 🧪 Pruebas fisicoquímicas
+    - 📦 Compatibilidad de envases
+    - 🚨 Alertas automáticas
+    - 📊 Informes consolidados
+    - 🌍 Trazabilidad internacional
+    
+    **Tecnologías:**
+    - Odoo 17 (ERP)
+    - PostgreSQL (Base de datos)
+    - Python + XML (Desarrollo)
+    - Sensores IoT (Hardware)
+    
+    **Estado:** Operativo ✅
+    """)
+
+with st.sidebar.expander("📊 Estadísticas del TPS"):
+    conn = get_connection()
+    
+    total_lotes = pd.read_sql_query("SELECT COUNT(*) as total FROM lotes_produccion", conn)
+    total_inspecciones = pd.read_sql_query("SELECT COUNT(*) as total FROM inspecciones_visuales", conn)
+    total_sensores = pd.read_sql_query("SELECT COUNT(*) as total FROM lecturas_sensores", conn)
+    total_pruebas = pd.read_sql_query("SELECT COUNT(*) as total FROM pruebas_fisicoquimicas", conn)
+    total_alertas = pd.read_sql_query("SELECT COUNT(*) as total FROM alertas_automaticas", conn)
+    total_informes = pd.read_sql_query("SELECT COUNT(*) as total FROM informes_calidad", conn)
+    
+    st.metric("📦 Lotes", total_lotes['total'].iloc[0])
+    st.metric("👁️ Inspecciones", total_inspecciones['total'].iloc[0])
+    st.metric("📡 Lecturas Sensores", total_sensores['total'].iloc[0])
+    st.metric("🧪 Pruebas Lab", total_pruebas['total'].iloc[0])
+    st.metric("🚨 Alertas", total_alertas['total'].iloc[0])
+    st.metric("📊 Informes", total_informes['total'].iloc[0])
+    
+    conn.close()
