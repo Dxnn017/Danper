@@ -1432,14 +1432,29 @@ elif modulo == "📊 Informes Consolidados":
                 st.plotly_chart(fig2, use_container_width=True)
                 
                 # Tendencia de calidad
-                informes_df['fecha_informe'] = pd.to_datetime(informes_df['fecha_informe'])
+                # Convertir 'fecha_informe' a datetime, con manejo de errores
+                informes_df['fecha_informe'] = pd.to_datetime(informes_df['fecha_informe'], errors='coerce')
+                
+                # Verifica si hay fechas no válidas (NaT) después de la conversión
+                invalid_dates = informes_df[informes_df['fecha_informe'].isna()]
+                if not invalid_dates.empty:
+                    st.write("Fechas inválidas encontradas en 'fecha_informe':", invalid_dates)
+                
+                # Asegurarse de que 'fecha_informe' no tenga valores nulos antes de extraer el mes
+                informes_df = informes_df.dropna(subset=['fecha_informe'])
+                
+                # Extraer el mes a partir de la fecha
                 informes_df['mes'] = informes_df['fecha_informe'].dt.to_period('M')
+                
+                # Agrupar por mes y calcular el promedio del porcentaje de calidad
                 tendencia_calidad = informes_df.groupby('mes')['porcentaje_calidad_total'].mean().reset_index()
                 tendencia_calidad['mes'] = tendencia_calidad['mes'].astype(str)
                 
+                # Graficar la tendencia de calidad mensual
                 fig4 = px.line(tendencia_calidad, x='mes', y='porcentaje_calidad_total',
-                             title='Tendencia de Calidad Mensual', markers=True)
+                               title='Tendencia de Calidad Mensual', markers=True)
                 st.plotly_chart(fig4, use_container_width=True)
+
 
 # MÓDULO DE TRAZABILIDAD INTERNACIONAL
 elif modulo == "🌍 Trazabilidad Internacional":
