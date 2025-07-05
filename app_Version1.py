@@ -1552,56 +1552,113 @@ elif modulo == "📊 Informes Consolidados":
             st.info("📊 No hay informes consolidados generados")
     
     with tab3:
-        st.subheader("📈 Análisis Ejecutivo")
+    st.subheader("📈 Análisis Ejecutivo Avanzado")
+    
+    conn = get_connection()
+    informes_df = pd.read_sql_query("""
+        SELECT ic.*, pa.nombre_producto, pa.categoria, lp.campo_origen
+        FROM informes_calidad ic
+        JOIN lotes_produccion lp ON ic.codigo_lote = lp.codigo_lote
+        JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
+    """, conn)
+    conn.close()
+    
+    if not informes_df.empty:
+        # Filtros para análisis
+        st.subheader("🔍 Filtros para Análisis")
+        col1, col2, col3 = st.columns(3)
         
-        conn = get_connection()
-        informes_df = pd.read_sql_query("""
-            SELECT ic.*, pa.nombre_producto, pa.categoria, lp.campo_origen
-            FROM informes_calidad ic
-            JOIN lotes_produccion lp ON ic.codigo_lote = lp.codigo_lote
-            JOIN productos_agro pa ON lp.codigo_producto = pa.codigo_producto
-        """, conn)
-        conn.close()
+        with col1:
+            producto_filtro = st.selectbox("Filtrar por Producto", 
+                ["Todos"] + list(informes_df['nombre_producto'].unique()))
         
-        if not informes_df.empty:
-            col1, col2 = st.columns(2)
+        with col2:
+            destino_filtro = st.selectbox("Filtrar por Destino", 
+                ["Todos"] + list(informes_df['destino_comercial'].unique()))
+        
+        with col3:
+            fecha_inicio = st.date_input("Fecha inicio", value=date.today() - timedelta(days=30))
+            fecha_fin = st.date_input("Fecha fin", value=date.today())
+        
+        # Aplicar filtros
+        if producto_filtro != "Todos":
+            informes_df = informes_df[informes_df['nombre_producto'] == producto_filtro]
+        
+        if destino_filtro != "Todos":
+            informes_df = informes_df[informes_df['destino_comercial'] == destino_filtro]
+        
+        informes_df['fecha_informe'] = pd.to_datetime(informes_df['fecha_informe']).dt.date
+        informes_df = informes_df[(informes_df['fecha_informe'] >= fecha_inicio) & 
+                                (informes_df['fecha_informe'] <= fecha_fin)]
+        
+        # Mostrar métricas filtradas
+        st.subheader("📊 Métricas Clave")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("📦 Lotes Analizados", len(informes_df))
+        with col2:
+            calidad_promedio = informes_df['porcentaje_calidad_total'].mean()
+            st.metric("📈 Calidad Promedio", f"{calidad_promedio:.1f}%")
+        with col3:
+            aprobados = len(informes_df[informes_df['decision_final'] == 'APROBADO'])
+            st.metric("✅ Lotes Aprobados", aprobados)
+        with col4:
+            rechazados = len(informes_df[informes_df['decision_final'] == 'RECHAZADO'])
+            st.metric("❌ Lotes Rechazados", rechazados)
+        
+        # Gráficos avanzados
+        st.subheader("📈 Tendencias de Calidad")
+        
+        # Tendencia semanal de calidad
+        informes_df['semana'] = pd.to_datetime(informes_df['fecha_informe']).dt.to_period('W').astype(str)
+        tendencia_semanal = informes_df.groupby('semana')['porcentaje_calidad_total'].mean().reset_index()
+        
+        fig = px.line(tendencia_semanal, x='semana', y='porcentaje_calidad_total',
+                     title='Tendencia Semanal de Calidad (%)',
+                     markers=True)
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Calidad por producto y destino
+        if len(informes_df) > 1:
+            calidad_producto_destino = informes_df.groupby(['nombre_producto', 'destino_comercial'])['porcentaje_calidad_total'].mean().unstack().reset_index()
             
-            with col1:
-                # Decisiones finales
-                decision_dist = informes_df['decision_final'].value_counts().reset_index()
-                decision_dist.columns = ['decision', 'cantidad']
+            fig2 = px.bar(calidad_producto_destino, 
+                         x='nombre_producto',
+                         y=calidad_producto_destino.columns[1:],
+                         title='Calidad Promedio por Producto y Destino',
+                         barmode='group',
+                         labels={'value': 'Calidad (%)', 'nombre_producto': 'Producto'})
+            st.plotly_chart(fig2, use_container_width=True)
+        
+        # Exportar reporte
+        st.subheader("📤 Exportar Reporte")
+        
+        if st.button("💾 Generar Reporte PDF"):
+            # Aquí iría la lógica para generar un PDF con los análisis
+            st.success("✅ Reporte generado (simulación)")
+        
+        if st.button("📊 Exportar Datos a Excel"):
+            # Crear un archivo Excel en memoria
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                informes_df.to_excel(writer, sheet_name='Informes', index=False)
                 
-                fig = px.pie(decision_dist, values='cantidad', names='decision',
-                           title='Distribución de Decisiones Finales',
-                           color_discrete_map={'APROBADO': '#10b981', 'RECHAZADO': '#ef4444', 'PENDIENTE': '#f59e0b'})
-                st.plotly_chart(fig, use_container_width=True)
-                
-                # Calidad por campo
-                calidad_campo = informes_df.groupby('campo_origen')['porcentaje_calidad_total'].mean().reset_index()
-                
-                fig3 = px.bar(calidad_campo, x='campo_origen', y='porcentaje_calidad_total',
-                            title='Calidad Promedio por Campo de Origen')
-                st.plotly_chart(fig3, use_container_width=True)
+                # Crear hoja de resumen
+                resumen = pd.DataFrame({
+                    'Métrica': ['Lotes Analizados', 'Calidad Promedio', 'Lotes Aprobados', 'Lotes Rechazados'],
+                    'Valor': [len(informes_df), f"{calidad_promedio:.1f}%", aprobados, rechazados]
+                })
+                resumen.to_excel(writer, sheet_name='Resumen', index=False)
             
-            with col2:
-                # Destinos comerciales
-                destino_dist = informes_df['destino_comercial'].value_counts().reset_index()
-                destino_dist.columns = ['destino', 'cantidad']
-                
-                fig2 = px.bar(destino_dist, x='destino', y='cantidad',
-                            title='Distribución por Destino Comercial')
-                st.plotly_chart(fig2, use_container_width=True)
-                
-                # Tendencia de calidad
-                informes_df['fecha_informe'] = pd.to_datetime(informes_df['fecha_informe'])
-                informes_df['mes'] = informes_df['fecha_informe'].dt.to_period('M')
-                tendencia_calidad = informes_df.groupby('mes')['porcentaje_calidad_total'].mean().reset_index()
-                tendencia_calidad['mes'] = tendencia_calidad['mes'].astype(str)
-                
-                fig4 = px.line(tendencia_calidad, x='mes', y='porcentaje_calidad_total',
-                             title='Tendencia de Calidad Mensual', markers=True)
-                st.plotly_chart(fig4, use_container_width=True)
-
+            output.seek(0)
+            st.download_button(
+                label="⬇️ Descargar Excel",
+                data=output,
+                file_name=f"reporte_calidad_{date.today()}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            
 # MÓDULO DE TRAZABILIDAD INTERNACIONAL
 elif modulo == "🌍 Trazabilidad Internacional":
     st.title("🌍 Trazabilidad Internacional - Exportaciones")
