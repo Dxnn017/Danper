@@ -133,7 +133,7 @@ Sistema de Procesamiento de Transacciones especializado en control de calidad pa
 
 ## 🎓 Proyecto Académico
 
-**Curso:** ISIA-103 - Sistemas Empresariales  
+**Curso:** Sistemas Empresariales  
 **Tipo:** Implementación de TPS  
 **Empresa:** Danper Trujillo S.A.C.  
 **Enfoque:** Control de Calidad Agroindustrial
